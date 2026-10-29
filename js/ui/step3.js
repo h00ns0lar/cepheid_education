@@ -26,9 +26,9 @@
       const cvDiff = h('canvas', { class: 'plot tall' });
       const diffNote = h('div', { class: 'muted', style: { fontSize: '.88rem' } });
       const batchBox = h('div');
-      const rawPlot = new C.Plot(cvRaw, { xlabel: '날짜 (일)', ylabel: '계기등급 (−2.5 log 플럭스)', invertY: true });
-      const resPlot = new C.Plot(cvRes, { xlabel: '날짜 (일)', ylabel: '비교성 변화 (mag)', invertY: true });
-      const diffPlot = new C.Plot(cvDiff, { xlabel: '날짜 (일)', ylabel: '차등측광 등급 (mag)', invertY: true });
+      const rawPlot = new C.Plot(cvRaw, { xlabel: '날짜 (일)', ylabel: '측정 등급 (계기등급)', invertY: true });
+      const resPlot = new C.Plot(cvRes, { xlabel: '날짜 (일)', ylabel: '비교성 밝기 변화 (등급)', invertY: true });
+      const diffPlot = new C.Plot(cvDiff, { xlabel: '날짜 (일)', ylabel: '차등측광 등급', invertY: true });
 
       const sel = () => (S.comps[cur] && S.comps[cur].length ? S.comps[cur] : (cur === first ? [] : C.compsFor(cur)));
       const manual = () => !!(S.comps[cur] && S.comps[cur].length);
@@ -50,7 +50,7 @@
             ctx.beginPath(); ctx.arc(x, y, ap.rOut * SCALE, 0, 6.2832); ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = '#ffcb47'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'left';
-            ctx.fillText('본성 ' + cur, x + ap.rOut * SCALE * 0.72 + 2, y - ap.rOut * SCALE * 0.72);
+            ctx.fillText('목표 별 ' + cur, x + ap.rOut * SCALE * 0.72 + 2, y - ap.rOut * SCALE * 0.72);
             return;
           }
           const k = chosen.indexOf(s.id);
@@ -66,17 +66,17 @@
             ctx.fillText(s.id, x + 13, y - 9);
           }
         });
-        info.textContent = 'Day ' + e.day + ' · 시상(FWHM) ' + e.fwhm.toFixed(1) + ' px · 하늘 ' + e.sky.toFixed(0) + ' e⁻/px · 투명도 손실 ' + (e.transp > 0 ? '+' : '') + e.transp.toFixed(2) + ' mag';
+        info.textContent = 'Day ' + e.day + ' · 대기 흔들림(시상) ' + e.fwhm.toFixed(1) + ' 픽셀 · 하늘빛 ' + e.sky.toFixed(0) + ' 전자/픽셀 · 구름으로 어두워진 정도 ' + (e.transp > 0 ? '+' : '') + e.transp.toFixed(2) + ' 등급';
         // 이 사진에서의 구경측광 값
         const c = C.centroid(R.frames[cur][fi], st.W, st.H, st.stars[0].x + e.jx, st.stars[0].y + e.jy, 1.2 * e.fwhm);
         const a = C.aperture(R.frames[cur][fi], st.W, st.H, c.x, c.y, ap.rAp, ap.rIn, ap.rOut);
         const f = Math.max(a.flux, 1);
         readout.innerHTML = '';
         readout.append(h('table', null,
-          h('tr', null, h('td', null, '구경 안 총합'), h('td', { class: 'mono' }, (a.flux + a.sky * a.npix).toFixed(0))),
-          h('tr', null, h('td', null, '하늘 (픽셀당) × 픽셀 수'), h('td', { class: 'mono' }, a.sky.toFixed(1) + ' × ' + a.npix.toFixed(0))),
-          h('tr', null, h('td', null, h('b', null, '별의 빛 = 총합 − 하늘')), h('td', { class: 'mono' }, a.flux.toFixed(0) + ' e⁻')),
-          h('tr', null, h('td', null, h('b', null, '계기등급 −2.5 log F')), h('td', { class: 'mono' }, (-2.5 * Math.log10(f)).toFixed(3)))));
+          h('tr', null, h('td', null, '원(구경) 안의 빛 전부'), h('td', { class: 'mono' }, (a.flux + a.sky * a.npix).toFixed(0))),
+          h('tr', null, h('td', null, '하늘빛 (픽셀당) × 픽셀 수'), h('td', { class: 'mono' }, a.sky.toFixed(1) + ' × ' + a.npix.toFixed(0))),
+          h('tr', null, h('td', null, h('b', null, '별의 빛 = 전부 − 하늘빛')), h('td', { class: 'mono' }, a.flux.toFixed(0) + ' 전자')),
+          h('tr', null, h('td', null, h('b', null, '측정 등급 (−2.5 log 빛의 양)')), h('td', { class: 'mono' }, (-2.5 * Math.log10(f)).toFixed(3)))));
       }
 
       // ---------- 차트 ----------
@@ -107,7 +107,7 @@
           diffPlot.begin(0, C.SIM.NIGHTS + 1, dr[0], dr[1]);
           diffPlot.scatter(lc.t, lc.m, { color: '#12a36a', err: lc.err });
           const med = C.median(lc.err);
-          diffNote.innerHTML = '측정 오차 중앙값 <b>' + med.toFixed(3) + ' mag</b> · 사용한 점 ' + lc.t.length + '/' + N + (lc.nDropped ? ' (너무 어두워 검출 실패 ' + lc.nDropped + '개 제외)' : '');
+          diffNote.innerHTML = '측정 오차(중앙값) <b>' + med.toFixed(3) + ' 등급</b> · 사용한 점 ' + lc.t.length + '/' + N + (lc.nDropped ? ' (너무 어두워 찾지 못한 ' + lc.nDropped + '개 제외)' : '');
         } else {
           diffPlot.begin(0, C.SIM.NIGHTS + 1, 0, 1);
           diffPlot.text(45, 0.5, '비교성을 2개 이상 고르면 차등측광 결과가 나타나요', { align: 'center', color: '#6b7da8' });
@@ -120,7 +120,7 @@
         const ph = C.getPhot(cur), chosen = sel();
         compBox.innerHTML = '';
         if (!chosen.length) {
-          compBox.append(h('div', { class: 'callout warn' }, cur === first ? '왼쪽 사진에서 비교성으로 쓸 별을 클릭하세요. 별마다 이름표(A, B, …)가 있어요. 2개 이상 고르면 좋아요.' : '비교성이 없습니다.'));
+          compBox.append(h('div', { class: 'callout warn' }, cur === first ? '왼쪽 사진에서 비교성(비교용 별)으로 쓸 별을 클릭하세요. 별마다 이름표(A, B, …)가 있어요. 2개 이상 고르면 좋아요.' : '비교성이 없습니다.'));
           return;
         }
         const rows = chosen.map((id, k) => {
@@ -134,10 +134,10 @@
         });
         compBox.append(
           !manual() && cur !== first ? h('div', { class: 'callout' }, '이 별은 자동으로 고른 비교성을 쓰고 있어요. 사진에서 별을 클릭하면 직접 바꿀 수 있어요.') : null,
-          h('table', null, h('tr', null, h('th', null, '비교성'), h('th', null, '카탈로그 등급'), h('th', null, '밝기 흔들림(rms)'), h('th', { style: { textAlign: 'left' } }, '점검 결과'), h('th')), rows));
+          h('table', null, h('tr', null, h('th', null, '비교성'), h('th', null, '알려진 등급(카탈로그)'), h('th', null, '밝기 흔들림'), h('th', { style: { textAlign: 'left' } }, '점검 결과'), h('th')), rows));
         const bad = chosen.filter((id) => ph.diag[id].grade === 'bad');
         if (bad.length) compBox.append(h('div', { class: 'callout bad' }, '⚠ ' + bad.join(', ') + ' 는 비교성으로 부적합해 보여요. 위 점검 결과를 보고 다른 별로 바꿔 보세요.'));
-        else if (chosen.length >= 2 && chosen.every((id) => ph.diag[id].grade === 'ok')) compBox.append(h('div', { class: 'callout good' }, '👍 좋은 비교성 조합이에요. 비교성들의 밝기가 밤마다 같이 움직이므로, 그만큼을 본성에서 빼 주면 됩니다.'));
+        else if (chosen.length >= 2 && chosen.every((id) => ph.diag[id].grade === 'ok')) compBox.append(h('div', { class: 'callout good' }, '👍 좋은 비교성 조합이에요. 밤마다 비교성들이 같이 밝아지거나 어두워지니, 그만큼을 목표 별 값에서 빼 주면 됩니다.'));
       }
 
       function toggleComp(id) {
@@ -168,15 +168,15 @@
             }
           });
           S.batchDone = true; S.an = {}; R.an = {}; C.save(); redraw(); C.refreshNav();
-        } }, S.batchDone ? '다시 일괄 처리' : '나머지 변광성도 같은 방법으로 일괄 처리');
+        } }, S.batchDone ? '다시 한꺼번에 처리' : '나머지 변광성도 같은 방법으로 한꺼번에 처리');
         batchBox.append(btn, ready ? null : h('span', { class: 'muted', style: { marginLeft: '8px' } }, first + '의 비교성을 먼저 2개 이상 골라야 해요'));
         if (S.batchDone) {
           const rows = ids.map((id) => {
             const lc = C.getLC(id);
             return h('tr', { class: 'clickable', onclick: () => { cur = id; redraw(); } }, h('td', null, id), h('td', null, S.comps[id].join(', ')), h('td', { class: 'mono' }, lc.t.length + '/' + N), h('td', { class: 'mono' }, C.median(lc.err).toFixed(3)));
           });
-          batchBox.append(h('table', { style: { marginTop: '10px' } }, h('tr', null, h('th', null, '변광성'), h('th', null, '비교성'), h('th', null, '사용한 점'), h('th', null, '오차 중앙값')), rows),
-            h('div', { class: 'callout good' }, '✔ 모든 변광성의 광도곡선이 준비됐어요. 다음 단계에서 주기를 찾습니다.'));
+          batchBox.append(h('table', { style: { marginTop: '10px' } }, h('tr', null, h('th', null, '변광성'), h('th', null, '비교성'), h('th', null, '사용한 점'), h('th', null, '측정 오차(중앙값)')), rows),
+            h('div', { class: 'callout good' }, '✔ 모든 변광성의 밝기 그래프(광도곡선)가 준비됐어요. 다음 단계에서 주기를 찾습니다.'));
         }
       }
 
@@ -199,7 +199,7 @@
         const s = pick(e), id = s ? s.id : null;
         if (id !== hover) {
           hover = id; drawView();
-          hoverLine.textContent = s ? '별 ' + s.id + ' · 카탈로그 등급 ' + s.cat.toFixed(2) + ' (클릭해서 비교성으로 선택/해제)' : '';
+          hoverLine.textContent = s ? '별 ' + s.id + ' · 알려진 등급 ' + s.cat.toFixed(2) + ' (클릭하면 비교성으로 고르거나 뺄 수 있어요)' : '';
         }
       });
       view.addEventListener('click', (e) => { const s = pick(e); if (s) toggleComp(s.id); });
@@ -213,12 +213,12 @@
 
       root.append(
         h('h2', null, '3단계 · 구경측광과 차등측광'),
-        h('p', { class: 'lead' }, '사진에서 별의 빛의 양을 재는 것이 측광이에요. 하지만 밤마다 구름·대기 상태가 달라서, 같은 별도 사진마다 다르게 찍힙니다. 그래서 ', h('b', null, '밝기가 변하지 않는 이웃 별(비교성)'), '과의 차이를 재야 해요.'),
+        h('p', { class: 'lead' }, '측광은 사진에서 별의 밝기를 숫자로 재는 일이에요. 그런데 밤마다 구름과 대기 상태가 달라서, 같은 별도 사진마다 다르게 찍혀요. 그래서 ', h('b', null, '밝기가 변하지 않는 이웃 별(비교성)'), '과 비교해서 밝기를 구해야 해요.'),
         h('div', { class: 'grid cols-2' },
           h('div', null,
             h('div', { class: 'panel' },
-              h('h3', null, '① 구경측광: 별의 빛 모으기'),
-              h('p', { class: 'muted' }, '노란 원(구경) 안의 빛을 모두 더하고, 점선 고리(하늘) 속 배경 값을 픽셀 수만큼 빼요. 원 크기는 그날의 시상에 맞춰 자동으로 정해집니다.'),
+              h('h3', null, '① 구경측광: 별 둘레에 원을 그려 빛 모으기'),
+              h('p', { class: 'muted' }, '노란 원(구경) 안의 빛을 모두 더하고, 점선 고리 안에서 잰 하늘빛을 원 안의 픽셀 수만큼 빼요. 원 크기는 그날 별이 퍼진 정도(시상)에 맞춰 자동으로 정해져요.'),
               view,
               h('div', { class: 'row', style: { marginTop: '8px' } }, playBtn, slider),
               info, hoverLine, h('div', { style: { marginTop: '8px' } }, readout))),
@@ -226,18 +226,18 @@
             h('div', { class: 'panel' },
               h('h3', null, '② 비교성 고르기'),
               h('div', { style: { marginBottom: '8px' } }, chips),
-              h('p', { class: 'muted' }, '좋은 비교성: 본성과 밝기가 비슷하고 · 이웃 별이 붙어 있지 않고 · 너무 밝아 포화되지 않고 · 가장자리가 아니고 · 밝기가 변하지 않는 별.'),
+              h('p', { class: 'muted' }, '좋은 비교성: 목표 별과 밝기가 비슷하고 · 바로 옆에 이웃 별이 없고 · 너무 밝아서 센서가 넘치지(포화) 않고 · 사진 가장자리가 아니고 · 밝기가 변하지 않는 별.'),
               compBox),
             h('div', { class: 'panel', style: { marginTop: '16px' } },
-              h('h3', null, '③ 차등측광: 공통된 흔들림 빼기'),
-              h('div', { class: 'muted', style: { margin: '2px 0' } }, '원시 측정: 밤마다 들쭉날쭉 (구름·시상 때문)'), cvRaw,
-              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '비교성들의 밝기 변화 (이게 곧 대기 상태의 영향)'), cvRes,
-              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '본성 − 비교성 = 차등측광 결과'), cvDiff, diffNote),
-            h('div', { class: 'panel', style: { marginTop: '16px' } }, h('h3', null, '④ 나머지 별 일괄 처리'), batchBox))),
+              h('h3', null, '③ 차등측광: 비교성과의 차이로 날씨 영향 없애기'),
+              h('div', { class: 'muted', style: { margin: '2px 0' } }, '그대로 잰 값: 밤마다 들쭉날쭉 (구름과 대기 흔들림 때문)'), cvRaw,
+              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '비교성들의 밝기 변화 (곧 날씨의 영향)'), cvRes,
+              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '목표 별 − 비교성 = 차등측광 결과'), cvDiff, diffNote),
+            h('div', { class: 'panel', style: { marginTop: '16px' } }, h('h3', null, '④ 나머지 별도 한꺼번에 처리'), batchBox))),
         h('details', null, h('summary', null, '차등측광은 어떻게 되는 건가요?'),
-          h('p', null, '어떤 밤 구름이 끼면 모든 별이 같은 정도로 어둡게 찍혀요. 그래서 (본성의 계기등급) − (비교성의 계기등급)을 구하면 구름의 영향이 서로 상쇄됩니다. 여기에 비교성의 ', h('b', null, '카탈로그 등급'), '(알려진 진짜 등급)을 더하면 본성의 등급 m이 나와요:'),
-          h('div', { class: 'formula' }, 'm', h('sub', null, '본성'), ' = m', h('sub', null, '계기, 본성'), ' − 평균 [ m', h('sub', null, '계기, 비교성'), ' − m', h('sub', null, '카탈로그, 비교성'), ' ]'),
-          h('p', null, '비교성이 여러 개면 평균을 내어 잡음도 줄어듭니다. 단, 비교성이 혼자 변하는 별이면 오히려 광도곡선이 엉망이 돼요.')));
+          h('p', null, '어떤 밤 구름이 끼면 모든 별이 같은 정도로 어둡게 찍혀요. 그래서 (목표 별의 측정 등급) − (비교성의 측정 등급)을 구하면 구름의 영향이 서로 사라져요. 여기에 비교성의 ', h('b', null, '알려진 등급(카탈로그 등급)'), '을 더하면 목표 별의 등급 m이 나와요:'),
+          h('div', { class: 'formula' }, 'm', h('sub', null, '목표'), ' = m', h('sub', null, '측정, 목표'), ' − 평균 [ m', h('sub', null, '측정, 비교성'), ' − m', h('sub', null, '카탈로그, 비교성'), ' ]'),
+          h('p', null, '비교성이 여러 개면 평균을 내서 측정 흔들림도 줄어요. 단, 비교성이 혼자 밝기가 변하는 별이면 오히려 결과가 엉망이 돼요.')));
 
       redraw();
     }

@@ -20,9 +20,9 @@
       const lsNote = h('div', { class: 'muted', style: { fontSize: '.88rem' } });
       const shapeBox = h('div');
       const classBox = h('div');
-      const timePlot = new C.Plot(cvTime, { xlabel: '날짜 (일)', ylabel: '등급 (mag)', invertY: true });
-      const lsPlot = new C.Plot(cvLS, { xlabel: '주기 (일)', ylabel: 'LS 파워', xlog: true });
-      const foldPlot = new C.Plot(cvFold, { xlabel: '위상 (0~1이 한 주기, 두 주기 겹쳐 그림)', ylabel: '등급 (mag)', invertY: true });
+      const timePlot = new C.Plot(cvTime, { xlabel: '날짜 (일)', ylabel: '등급', invertY: true });
+      const lsPlot = new C.Plot(cvLS, { xlabel: '주기 (일)', ylabel: '주기가 맞는 정도 (LS 파워)', xlog: true });
+      const foldPlot = new C.Plot(cvFold, { xlabel: '위상 (0~1이 한 주기, 두 주기를 이어서 그림)', ylabel: '등급', invertY: true });
 
       const lcOf = () => C.getLC(cur);
       const autoOf = () => C.getAuto(cur);
@@ -74,7 +74,7 @@
           lsPlot.ctx.fillText(String(i + 1), x, y - 8);
         });
         lsPlot.vline(P, { color: '#e8890c', dash: [5, 4], w: 1.5 });
-        lsNote.innerHTML = '높은 피크 순서로 번호가 붙어 있어요. 주황 점선이 지금 쓰는 주기 <b>' + P.toFixed(2) + '일</b>. 피크를 클릭하면 그 주기로 바뀝니다.';
+        lsNote.innerHTML = '가장 높은 봉우리(피크)부터 1, 2, 3… 번호가 붙어 있어요. 주황 점선이 지금 쓰는 주기 <b>' + P.toFixed(2) + '일</b>이에요. 봉우리를 클릭하면 그 주기로 바뀝니다.';
 
         // 위상 접기
         const ph = lc.t.map((t) => { let p = t / P - fit.phase0; p -= Math.floor(p); return p; });
@@ -90,9 +90,9 @@
         const good = disp < 0.12 ? 'ok' : disp < 0.35 ? 'warn' : 'bad';
         kpi.innerHTML = '';
         kpi.append(
-          h('div', null, h('div', { class: 'v' }, P.toFixed(2) + ' 일'), h('div', { class: 'l' }, '주기 P ± ' + perr.toFixed(2))),
-          h('div', null, h('div', { class: 'v' }, disp.toFixed(2)), h('div', { class: 'l' }, '위상 산포 (작을수록 매끈)')),
-          h('div', null, h('div', { class: 'v' }, fit.amp.toFixed(2) + ' mag'), h('div', { class: 'l' }, '진폭 (최대−최소)')),
+          h('div', null, h('div', { class: 'v' }, P.toFixed(2) + ' 일'), h('div', { class: 'l' }, '주기 P (오차 ± ' + perr.toFixed(2) + ')')),
+          h('div', null, h('div', { class: 'v' }, disp.toFixed(2)), h('div', { class: 'l' }, '겹침 정도 (작을수록 매끈, 위상 산포)')),
+          h('div', null, h('div', { class: 'v' }, fit.amp.toFixed(2) + ' 등급'), h('div', { class: 'l' }, '밝기 변화 폭 (진폭)')),
           h('div', null, h('div', { class: 'v' }, fit.meanMag.toFixed(2)), h('div', { class: 'l' }, '평균 등급 ⟨m⟩')));
         kpi.append(h('div', null, h('span', { class: 'tag ' + good }, good === 'ok' ? '잘 겹쳐요' : good === 'warn' ? '조금 흩어져요' : '주기가 맞지 않아요')));
 
@@ -103,8 +103,8 @@
           h('b', null, '모양 단서: '),
           sm.asym >= 0.1
             ? '곡선이 좌우 비대칭이에요 (급하게 밝아지고 천천히 어두워짐) → 세페이드의 톱니 모양에 가깝습니다.'
-            : '곡선이 좌우 대칭이고 날카롭게 어두워졌다 돌아와요 → 별이 서로를 가리는 식쌍성에 가깝습니다. (식쌍성은 한 주기에 어두워짐이 두 번 있어 ×2 주기가 진짜 공전주기일 수 있어요)',
-          h('small', { class: 'muted' }, ' (비대칭 지표 ' + sm.asym.toFixed(2) + ')')));
+            : '곡선이 좌우 대칭이고 뾰족하게 어두워졌다 돌아와요 → 두 별이 서로를 가리는 식쌍성에 가까워요. (식쌍성은 한 바퀴 도는 동안 어두워지는 때가 두 번이라, P × 2 가 진짜 주기일 수 있어요)',
+          h('small', { class: 'muted' }, ' (비대칭 정도 ' + sm.asym.toFixed(2) + ')')));
 
         // 분류 버튼
         const ty = typeOf(cur);
@@ -134,39 +134,39 @@
         setP(P); redraw();
       });
 
-      const btnBest = h('button', { onclick: () => { setP(autoOf().P); redraw(); } }, 'LS 최고 피크로');
+      const btnBest = h('button', { onclick: () => { setP(autoOf().P); redraw(); } }, '가장 높은 봉우리로');
       const btnHalf = h('button', { onclick: () => { setP(curP() / 2); redraw(); } }, 'P ÷ 2');
       const btnDbl = h('button', { onclick: () => { setP(curP() * 2); redraw(); } }, 'P × 2');
       const btnAll = h('button', { class: 'primary', onclick: () => {
         ids.forEach((id) => { const au = C.getAuto(id); const prev = S.an[id] || {}; S.an[id] = Object.assign({}, prev, { P: au.P }); });
         S.plFit = false; C.save(); redraw();
-      } }, '전체 별 주기 자동 분석');
+      } }, '모든 별 주기 자동으로 찾기');
       const btnSuggest = h('button', { onclick: () => {
         ids.forEach((id) => {
           const lc = C.getLC(id), P = (S.an[id] && S.an[id].P) || C.getAuto(id).P;
           S.an[id] = Object.assign({}, S.an[id] || {}, { P, type: C.suggestType(C.fourierFit(lc.t, lc.m, P, 3)) });
         });
         S.plFit = false; C.save(); redraw(); C.refreshNav();
-      } }, '모양 단서대로 나머지 분류 채우기');
+      } }, '모양을 보고 자동으로 분류하기');
 
       root.append(
-        h('h2', null, '4단계 · 시계열분석: 주기 찾기'),
-        h('p', { class: 'lead' }, '차등측광으로 얻은 밝기-시간 그래프에서 반복되는 주기를 찾아요. 관측 간격이 불규칙하기 때문에 Lomb–Scargle 주기도를 씁니다. 그다음 그 주기로 자료를 "접어서" 매끈한 곡선이 되는지 확인해요.'),
+        h('h2', null, '4단계 · 시간에 따른 밝기 분석(시계열분석): 주기 찾기'),
+        h('p', { class: 'lead' }, '3단계에서 얻은 "시간에 따른 밝기 그래프"(광도곡선)에서 밝기가 되풀이되는 주기를 찾아요. 촬영 간격이 불규칙해서 Lomb–Scargle 주기도라는 방법을 써요. 그다음 찾은 주기로 그래프를 한 주기 길이로 "접어서", 점들이 매끈한 곡선 위에 모이는지 확인해요.'),
         h('div', { class: 'row', style: { marginBottom: '10px' } }, chips, h('span', { class: 'spacer' }), btnAll, btnSuggest),
         h('div', { class: 'grid cols-2' },
           h('div', { class: 'panel' },
-            h('h3', null, '① 광도곡선 (차등측광 결과)'), cvTime,
-            h('h3', { style: { marginTop: '12px' } }, '② Lomb–Scargle 주기도'), cvLS, lsNote),
+            h('h3', null, '① 광도곡선 (시간에 따른 밝기)'), cvTime,
+            h('h3', { style: { marginTop: '12px' } }, '② 주기도 (Lomb–Scargle): 어떤 주기가 잘 맞을까?'), cvLS, lsNote),
           h('div', { class: 'panel' },
-            h('h3', null, '③ 위상 접기'), cvFold,
-            h('div', { class: 'row', style: { margin: '8px 0' } }, h('span', { class: 'muted' }, '주기 미세조정'), slider, pnum, h('span', { class: 'muted' }, '일')),
+            h('h3', null, '③ 위상 접기: 한 주기로 겹쳐 보기'), cvFold,
+            h('div', { class: 'row', style: { margin: '8px 0' } }, h('span', { class: 'muted' }, '주기를 조금씩 바꾸기'), slider, pnum, h('span', { class: 'muted' }, '일')),
             h('div', { class: 'row' }, btnBest, btnHalf, btnDbl))),
         h('div', { class: 'panel', style: { marginTop: '16px' } }, kpi, shapeBox, classBox),
         h('details', null, h('summary', null, '주기도·위상 접기 읽는 법'),
-          h('p', null, h('b', null, '주기도'), ': 가로축은 시험해 본 주기, 세로축은 그 주기의 사인파가 자료와 얼마나 잘 맞는지예요. 가장 높은 피크가 후보 주기입니다. 곡선이 사인파가 아닌 톱니 모양이면 주기의 1/2, 1/3 자리에도 작은 피크(조화 피크)가 생겨요.'),
-          h('p', null, h('b', null, '위상 접기'), ': 각 관측 시각을 t / P의 소수 부분(위상)으로 바꿔 한 주기 안에 겹쳐 그려요. 주기가 맞으면 점들이 하나의 매끈한 곡선 위에 모이고, 틀리면 흩어집니다. 미세조정 슬라이더로 위상 산포가 최소가 되는 값을 찾아보세요.'),
-          h('p', null, h('b', null, '푸리에 적합'), ': 주황 곡선은 사인 3개를 합친 모델로, 곡선의 평균 등급 ⟨m⟩과 진폭을 구하는 데 써요. 이 ⟨m⟩이 다음 단계에서 쓸 "겉보기등급"입니다.'),
-          h('p', null, h('b', null, '세페이드 vs 식쌍성'), ': 세페이드는 톱니(급상승·완만 하강), 식쌍성은 대부분 평평하다가 날카롭게 어두워지는 대칭 곡선이에요.')));
+          h('p', null, h('b', null, '주기도'), ': 가로축은 시험해 본 주기, 세로축은 그 주기로 되풀이되는 물결(사인파)이 자료와 얼마나 잘 맞는지예요. 가장 높은 봉우리가 후보 주기입니다. 밝기 곡선이 톱니 모양이면 진짜 주기의 1/2, 1/3 자리에도 작은 가짜 봉우리가 생겨요.'),
+          h('p', null, h('b', null, '위상 접기'), ': 모든 관측 시각을 "한 주기 중 어디쯤인가(0~1, 위상)"로 바꿔서 한 주기 안에 겹쳐 그려요. 주기가 맞으면 점들이 하나의 매끈한 곡선 위에 모이고, 틀리면 흩어져요. 슬라이더로 주기를 조금씩 바꿔서 점들이 가장 매끈하게 모이는 값을 찾아보세요.'),
+          h('p', null, h('b', null, '곡선 맞추기(푸리에 적합)'), ': 주황 곡선은 물결(사인파) 3개를 더해 점들에 맞춘 곡선이에요. 이 곡선에서 평균 등급 ⟨m⟩과 밝기 변화 폭(진폭)을 구해요. 이 ⟨m⟩이 다음 단계에서 쓸 "겉보기등급"입니다.'),
+          h('p', null, h('b', null, '세페이드 vs 식쌍성'), ': 세페이드는 톱니 모양(빨리 밝아지고 천천히 어두워짐), 식쌍성은 평평하다가 뾰족하게 어두워지는 좌우 대칭 곡선이에요.')));
 
       redraw();
     }

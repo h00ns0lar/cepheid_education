@@ -117,12 +117,12 @@
       const medErr = median(m.err);
       const edge = s.x < rOut + 1 || s.y < rOut + 1 || s.x > stamp.W - rOut - 1 || s.y > stamp.H - rOut - 1;
       let grade = 'ok', reason = '사용 가능';
-      if (peak > 0.9 * C.SIM.SAT) { grade = 'bad'; reason = '포화 (너무 밝음)'; }
-      else if (edge) { grade = 'bad'; reason = '가장자리 (구경이 잘림)'; }
+      if (peak > 0.9 * C.SIM.SAT) { grade = 'bad'; reason = '너무 밝음 (센서가 넘침)'; }
+      else if (edge) { grade = 'bad'; reason = '사진 가장자리라 원이 잘림'; }
       else if (rms > 0.06) {
         grade = 'bad';
-        reason = medErr > 0.04 ? '너무 어두워 잡음이 큼' : '밝기가 혼자 변함 (변광 의심)';
-      } else if (Math.abs(zpOff) > 0.12) { grade = 'warn'; reason = '영점 불일치 (이웃 별 혼입 의심)'; }
+        reason = medErr > 0.04 ? '너무 어두워 값이 많이 흔들림' : '혼자 밝기가 변함 (변광성일 수 있음)';
+      } else if (Math.abs(zpOff) > 0.12) { grade = 'warn'; reason = '이웃 별 빛이 섞였을 수 있음'; }
       out[s.id] = { rms, zpOff, peak, medErr, edge, grade, reason, cat: s.cat, res: res.map((x) => x - mean) };
     });
     return out;

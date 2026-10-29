@@ -29,15 +29,15 @@
         const v = C.varById(id);
         C.drawFrame(view, R.frames[id][n], v.stamp.W, v.stamp.H, 4);
         const ep = sched.epochs[n];
-        caption.textContent = id + ' 주변 · Day ' + ep.day + ' · 시상 ' + ep.fwhm.toFixed(1) + ' 픽셀 · ' + (ep.transp > 0.12 ? '엷은 구름' : '맑음');
+        caption.textContent = id + ' 주변 · Day ' + ep.day + ' · 대기 흔들림(시상) ' + ep.fwhm.toFixed(1) + ' 픽셀 · ' + (ep.transp > 0.12 ? '엷은 구름' : '맑음');
       }
       function summary() {
         stat.innerHTML = '';
         stat.append(h('div', { class: 'kpi' },
-          h('div', null, h('div', { class: 'v' }, String(nOk)), h('div', { class: 'l' }, '찍은 날 (에포크)')),
+          h('div', null, h('div', { class: 'v' }, String(nOk)), h('div', { class: 'l' }, '사진을 찍은 날')),
           h('div', null, h('div', { class: 'v' }, String(nCloud)), h('div', { class: 'l' }, '구름으로 놓친 밤')),
           h('div', null, h('div', { class: 'v' }, String(ids.length)), h('div', { class: 'l' }, '추적한 변광성')),
-          h('div', null, h('div', { class: 'v' }, String(nOk * ids.length)), h('div', { class: 'l' }, '모은 이미지 수'))));
+          h('div', null, h('div', { class: 'v' }, String(nOk * ids.length)), h('div', { class: 'l' }, '모은 사진 수'))));
       }
 
       if (S.observed) {
@@ -47,7 +47,7 @@
         showFrame(first, sched.epochs.length - 1);
         summary();
         startBtn.disabled = true; startBtn.textContent = '✔ 촬영 완료';
-        log.textContent = '이미 촬영을 마쳤습니다. "다음"으로 넘어가 측광을 시작하세요.';
+        log.textContent = '이미 촬영을 마쳤어요. "다음"을 눌러 밝기 재기(측광)를 시작하세요.';
       } else {
         cells.forEach((c) => c.className = 'night pending');
       }
@@ -83,14 +83,14 @@
             thumbs.appendChild(tc);
             while (thumbs.children.length > 14) thumbs.removeChild(thumbs.firstChild);
             paintCell(d, 'ok', true);
-            status.textContent = 'Day ' + n.day + ' · 노출 600초 · 이미지 ' + ids.length + '장 저장';
+            status.textContent = 'Day ' + n.day + ' · 10분 동안 촬영 · 사진 ' + ids.length + '장 저장';
             ei++;
           } else if (n.status === 'cloud') {
             paintCell(d, 'cloud', true);
             status.textContent = 'Day ' + n.day + ' · ☁ 구름 때문에 관측 불가';
           } else {
             paintCell(d, 'off', true);
-            status.textContent = 'Day ' + n.day + ' · 망원경 시간이 배정되지 않은 밤';
+            status.textContent = 'Day ' + n.day + ' · 망원경을 쓸 수 없는 밤';
           }
           if (d > 0) cells[d - 1].classList.remove('now');
           d++;
@@ -110,7 +110,7 @@
             h('div', { class: 'legend' },
               h('span', null, h('i', { style: { background: 'var(--green)' } }), '촬영 성공'),
               h('span', null, h('i', { style: { background: '#9fb0d4' } }), '구름'),
-              h('span', null, h('i', { style: { background: '#f1f5fc', border: '1px solid #e0e9f8' } }), '망원경 시간 없음')),
+              h('span', null, h('i', { style: { background: '#f1f5fc', border: '1px solid #e0e9f8' } }), '망원경을 못 쓴 밤')),
             h('div', { style: { marginTop: '12px' } }, stat)),
           h('div', { class: 'panel' },
             h('h3', null, '방금 찍은 사진'),
@@ -118,8 +118,8 @@
             h('div', { style: { margin: '10px 0 4px' }, class: 'muted' }, '최근 사진들'),
             thumbs, h('div', { style: { marginTop: '8px' } }, log))),
         h('details', null, h('summary', null, '관측은 이렇게 이루어져요'),
-          h('p', null, '가상의 대형 망원경으로 V 필터(사람 눈에 가장 가까운 노란-초록 빛)를 써서 노출 600초씩 찍습니다. 하늘 상태는 밤마다 달라서 어떤 밤은 구름이 끼고, 어떤 밤은 별이 번져 보여요(시상). 망원경은 매일 쓸 수 있지도 않아서 관측 간격은 ', h('b', null, '불규칙'), '합니다 — 그래서 4단계에서 불규칙 간격에 강한 방법(Lomb–Scargle)을 쓰게 돼요.'),
-          h('p', null, '이번에 선택한 변광성 주변 사진은 ' + ids.length + '곳 × ' + nOk + '번 = ' + (ids.length * nOk) + '장입니다. (교육용 시뮬레이션이라 사진 한 장은 변광성 주변 작은 시야만 담아요.)')));
+          h('p', null, '가상의 큰 망원경에 V 필터(사람 눈에 가장 가까운 노란-초록빛만 통과시키는 필터)를 끼우고, 한 장에 10분(600초)씩 찍어요. 하늘 상태는 밤마다 달라서 어떤 밤은 구름이 끼고, 어떤 밤은 대기가 흔들려 별이 번져 보여요(시상). 망원경을 매일 쓸 수도 없어서 촬영 간격은 ', h('b', null, '불규칙'), '합니다. 그래서 4단계에서는 간격이 불규칙해도 쓸 수 있는 방법(Lomb–Scargle)을 써요.'),
+          h('p', null, '이번에 선택한 변광성 주변 사진은 ' + ids.length + '곳 × ' + nOk + '번 = ' + (ids.length * nOk) + '장입니다. (교육용 시뮬레이션이라 사진 한 장에는 변광성 주변의 좁은 하늘만 담겨요.)')));
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
