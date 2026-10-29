@@ -1,370 +1,264 @@
-// 도전 과제(+난이도): 각 단계 아래에 놓이는 선택 과제. 자동으로 해 주는 부분을 학생이 직접 계산해 보는 계산기들.
+// 도전 과제(+난이도): 4~6단계 아래에 놓이는 선택 과제.
+// 새로운 걸 시키는 게 아니라, 위에서 컴퓨터가 자동으로 해 준 계산을 학생이 계산식으로 직접 해 보고 스스로 채점한다.
 // 건너뛰어도 다음 단계로 갈 수 있다.
 (function (g) {
   const C = g.CEPH;
   const h = C.h;
 
-  const num = (value, step, w) => h('input', { type: 'number', step: String(step || 'any'), value: String(value), style: { width: (w || 90) + 'px' } });
-  const field = (label, el, unit) => h('label', { class: 'kv' }, h('span', { class: 'muted' }, label), el, unit ? h('span', { class: 'muted' }, unit) : null);
   const frac = (x) => x - Math.floor(x);
-  const kpi = (items) => h('div', { class: 'kpi' }, items.map(([v, l]) => h('div', null, h('div', { class: 'v' }, v), h('div', { class: 'l' }, l))));
   const note = (kind, text) => h('div', { class: 'callout ' + kind }, text);
+  const pick = (arr, n) => {
+    const a = arr.slice(), out = [];
+    while (out.length < n && a.length) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
+    return out;
+  };
 
-  // 접히는 도전 과제 하나. 캔버스가 있는 과제는 펼칠 때 그린다(닫힌 상태에서는 크기를 알 수 없다).
-  C.chal = function (title, body, onOpen) {
-    const d = h('details', { class: 'chal' }, h('summary', null, title), h('div', { class: 'chal-body' }, body));
-    if (onOpen) d.addEventListener('toggle', () => { if (d.open) onOpen(); });
+  // 접히는 도전 과제 하나. 펼칠 때(또는 refresh 때) 내용을 새로 만든다.
+  C.chal = function (title, build) {
+    const body = h('div', { class: 'chal-body' });
+    const d = h('details', { class: 'chal' }, h('summary', null, title), body);
+    const fill = () => { body.innerHTML = ''; build(body); };
+    d.addEventListener('toggle', () => { if (d.open) fill(); });
+    d.refresh = () => { if (d.open) fill(); else body.innerHTML = ''; };
     return d;
   };
   C.chalZone = (items) => h('section', { class: 'chal-zone' },
     h('h3', null, '⭐ 도전 과제 (+난이도)'),
-    h('p', { class: 'muted' }, '위에서 자동으로 해 준 일을 이번엔 직접 해 보는 선택 과제예요. 건너뛰어도 다음 단계로 갈 수 있어요.'),
+    h('p', { class: 'muted' }, '위에서 컴퓨터가 자동으로 해 준 계산을, 이번엔 직접 계산식을 써서 해 보고 스스로 채점해 보는 선택 과제예요. 건너뛰어도 다음 단계로 갈 수 있어요.'),
     items);
 
-  // ---------------------------------------------------------------- 2단계
-  C.chal2 = function (sched) {
-    const T = C.SIM.NIGHTS, ts = sched.epochs.map((e) => e.t), n = ts.length;
-    const pIn = num(12, 0.1);
-    const cv = h('canvas', { style: { width: '100%', height: '70px', display: 'block', background: '#f6f9ff', border: '1px solid var(--line)', borderRadius: '8px' } });
-    const out = h('div');
-    const reveal = h('details', null, h('summary', null, '정답 보기'),
-      h('p', null, '촬영이 밤마다 한 번씩만 이루어지기 때문이에요. 주기가 정확히 1일(또는 2일, 3일…)이면 매번 주기의 같은 지점에서만 사진을 찍게 되어, 밝기 변화의 나머지 부분을 영영 못 봐요. 이렇게 촬영 간격 때문에 진짜 모습을 못 보거나 다른 주기로 착각하는 현상을 ', h('b', null, '앨리어싱'), '이라고 해요. 그래서 이 사이트는 촬영 간격을 일부러 불규칙하게 했어요.'));
-
-    function drawStrip(ph) {
-      const w = cv.clientWidth || 600, hh = 70, dpr = window.devicePixelRatio || 1;
-      cv.width = Math.round(w * dpr); cv.height = Math.round(hh * dpr);
-      const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const x0 = 16, x1 = w - 16;
-      c.strokeStyle = '#9db0d6'; c.fillStyle = '#6b7da8'; c.font = '11px sans-serif'; c.textAlign = 'center';
-      c.beginPath(); c.moveTo(x0, 30); c.lineTo(x1, 30); c.stroke();
-      [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
-        const x = x0 + v * (x1 - x0);
-        c.beginPath(); c.moveTo(x, 26); c.lineTo(x, 34); c.stroke();
-        c.fillText(String(v), x, 52);
+  // 채점표. rows: [{label, unit, ans, tol|tolRel, circ, options, hint, show}]
+  // opts: {solution: [노드...], extra: [버튼...]}
+  C.quiz = function (rows, opts) {
+    opts = opts || {};
+    const inputs = rows.map((r) => (r.options
+      ? h('select', null, h('option', { value: '' }, '선택'), r.options.map(([v, t]) => h('option', { value: v }, t)))
+      : h('input', { type: 'number', step: 'any', style: { width: '110px' } })));
+    const marks = rows.map(() => h('td', { class: 'qmark' }));
+    const summary = h('div', { style: { marginTop: '8px' } });
+    const table = h('table', { class: 'quiz' }, rows.map((r, i) => h('tr', null,
+      h('td', null, r.label), h('td', null, inputs[i], r.unit ? h('span', { class: 'muted' }, ' ' + r.unit) : null), marks[i])));
+    const sol = h('details', null, h('summary', null, '정답과 풀이 보기'),
+      h('ul', null, rows.map((r) => h('li', null, r.label + ' → ', h('b', null, r.show)))),
+      opts.solution || null);
+    const grade = h('button', { class: 'primary', onclick: () => {
+      let right = 0, filled = 0;
+      rows.forEach((r, i) => {
+        const raw = inputs[i].value;
+        marks[i].className = 'qmark';
+        if (raw === '') { marks[i].textContent = '입력해 주세요'; marks[i].classList.add('warn'); return; }
+        filled++;
+        let ok;
+        if (r.options) ok = raw === r.ans;
+        else {
+          let d = Math.abs(+raw - r.ans);
+          if (r.circ) { d = d % 1; d = Math.min(d, 1 - d); }
+          ok = d <= (r.tolRel != null ? Math.abs(r.ans) * r.tolRel : r.tol);
+        }
+        if (ok) right++;
+        marks[i].classList.add(ok ? 'ok' : 'bad');
+        marks[i].textContent = ok ? '✔ 맞아요' : '✘ ' + (r.hint || '다시 계산해 보세요');
       });
-      c.fillText('위상 (한 주기를 0~1로 나타낸 값)', (x0 + x1) / 2, 66);
-      c.fillStyle = 'rgba(37,99,235,.55)';
-      ph.forEach((p) => { c.beginPath(); c.arc(x0 + p * (x1 - x0), 30, 5, 0, 6.2832); c.fill(); });
-    }
-
-    function upd() {
-      const P = +pIn.value;
-      out.innerHTML = '';
-      if (!(P >= 0.3)) { out.append(note('warn', '주기는 0.3일 이상으로 넣어 주세요.')); return; }
-      const ph = ts.map((t) => frac(t / P));
-      const s = ph.slice().sort((a, b) => a - b);
-      let gap = s[0] + 1 - s[n - 1];
-      for (let i = 1; i < n; i++) gap = Math.max(gap, s[i] - s[i - 1]);
-      const cycles = T / P;
-      drawStrip(ph);
-      out.append(
-        kpi([[cycles.toFixed(1) + ' 번', '90일 동안 주기가 반복되는 횟수'], [(n / cycles).toFixed(1) + ' 장', '한 주기당 사진 수'], [(T / n).toFixed(1) + ' 일', '평균 촬영 간격'], [(gap * 100).toFixed(0) + ' %', '위상에서 가장 큰 빈 구간']]),
-        cycles < 2 ? note('bad', '주기가 두 번도 반복되지 않아요. 이 정도 기간으로는 주기를 알 수 없어요. 더 오래 관측해야 해요.')
-          : gap > 0.3 ? note('warn', '위상이 크게 비어 있어요. 곡선의 일부를 못 본 셈이라 주기를 잘못 잡을 수 있어요.')
-            : note('good', '위상이 고르게 채워져요. 이 주기라면 밝기 변화 전체를 볼 수 있어요.'));
-    }
-    pIn.addEventListener('input', upd);
-
-    return C.chal('① 촬영 계획 계산기: 이 주기를 알아낼 수 있을까?', [
-      h('p', null, '실제 관측은 기간과 사진 수가 정해져 있어요. 별의 주기가 P일 때, 지금 찍은 사진들이 한 주기의 어느 지점(위상)들을 덮는지 확인해 봐요.'),
-      h('div', { class: 'row' }, field('가정한 주기 P', pIn, '일')),
-      cv, out,
-      h('div', { class: 'callout' }, h('b', null, '생각해 보기: '), 'P를 정확히 1.0일, 2.0일로 바꿔 보세요. 점들이 한곳에 몰려요. 왜 그럴까요?'),
-      reveal
-    ], upd);
+      summary.innerHTML = '';
+      if (filled < rows.length) summary.append(note('warn', '아직 입력하지 않은 칸이 있어요.'));
+      else summary.append(note(right === rows.length ? 'good' : 'warn', right + ' / ' + rows.length + ' 맞았어요. ' + (right === rows.length ? '컴퓨터와 같은 결과를 직접 계산해 냈어요!' : '틀린 칸을 다시 계산해 보고, 막히면 "정답과 풀이 보기"를 열어 보세요.')));
+    } }, '채점하기');
+    return h('div', null, table, h('div', { class: 'row', style: { marginTop: '8px' } }, grade, opts.extra || null), summary, sol);
   };
 
-  // ---------------------------------------------------------------- 3단계
-  // ctx: state() → {cur, fi, ph, chosen}, readout() → {flux, sky, npix}
-  C.chal3 = function (ctx) {
-    // ① 차등측광 손계산
-    const handBox = h('div');
-    function hand() {
-      const st = ctx.state();
-      handBox.innerHTML = '';
-      if (!st.chosen.length) { handBox.append(note('warn', '먼저 위에서 비교성을 하나 이상 골라 주세요. 그러면 그날 사진의 값으로 문제가 만들어져요.')); return; }
-      const m = st.ph.meas, i = st.fi;
-      const tInst = m.TGT.inst[i];
-      const comps = st.chosen.map((id) => ({ id, inst: m[id].inst[i], cat: st.ph.diag[id].cat }));
-      const offs = comps.map((c) => c.inst - c.cat);
-      const mean = offs.reduce((a, b) => a + b, 0) / offs.length;
-      const answer = tInst - mean;
-      const guess = num('', 0.001, 110);
-      const result = h('div');
-      const sol = h('details', null, h('summary', null, '풀이 보기'),
-        h('p', null, '① 비교성마다 (측정 등급 − 알려진 등급)을 구해요: ' + comps.map((c, k) => c.id + ' = ' + offs[k].toFixed(3)).join(', ')),
-        h('p', null, '② 평균을 내요: ' + mean.toFixed(3) + '  (이게 그날 구름·대기 때문에 생긴 어긋남이에요)'),
-        h('p', null, '③ 목표 별의 측정 등급에서 그 값을 빼요: ' + tInst.toFixed(3) + ' − (' + mean.toFixed(3) + ') = ' + answer.toFixed(3)));
-      handBox.append(
-        h('p', null, h('b', null, 'Day ' + st.eps[i].day + ' 사진'), '(위 슬라이더로 날짜를 바꾸면 문제도 바뀌어요). 목표 별 ' + st.cur + '의 등급 m을 직접 구해 보세요.'),
-        h('table', null,
-          h('tr', null, h('th', null, '별'), h('th', null, '측정 등급'), h('th', null, '알려진 등급(카탈로그)')),
-          h('tr', null, h('td', null, '목표 ' + st.cur), h('td', { class: 'mono' }, tInst.toFixed(3)), h('td', null, '?')),
-          comps.map((c) => h('tr', null, h('td', null, '비교 ' + c.id), h('td', { class: 'mono' }, c.inst.toFixed(3)), h('td', { class: 'mono' }, c.cat.toFixed(3))))),
-        h('div', { class: 'row', style: { marginTop: '8px' } }, field('내 답 m =', guess),
-          h('button', { class: 'primary', onclick: () => {
-            result.innerHTML = '';
-            const g1 = +guess.value;
-            if (guess.value === '' || !isFinite(g1)) { result.append(note('warn', '숫자를 입력해 주세요.')); return; }
-            const d = Math.abs(g1 - answer);
-            result.append(d < 0.02 ? note('good', '정답이에요! (오차 ' + d.toFixed(3) + ' 등급) 자동 계산과 같은 방법이에요.')
-              : note('bad', '조금 달라요 (차이 ' + d.toFixed(3) + ' 등급). 부호에 주의하며 다시 해 보거나 풀이를 보세요.'));
-          } }, '확인')),
-        result, sol);
-    }
-
-    // ② S/N 계산기
-    const rd = ctx.readout() || { flux: 20000, sky: 20, npix: 60 };
-    const fIn = num(Math.round(rd.flux), 100, 110), sIn = num(rd.sky.toFixed(1), 0.1), nIn = num(Math.round(rd.npix), 1, 70), rIn = num(3, 0.5, 70), tgt = num(20, 1, 70);
-    const snrOut = h('div');
-    function snr() {
-      const F = +fIn.value, sky = +sIn.value, np = +nIn.value, rn = +rIn.value, want = +tgt.value;
-      snrOut.innerHTML = '';
-      if (!(F > 0 && np > 0 && sky >= 0 && rn >= 0 && want > 0)) { snrOut.append(note('warn', '모든 칸에 0보다 큰 값을 넣어 주세요.')); return; }
-      const B = np * (sky + rn * rn);
-      const S = F / Math.sqrt(F + B);
-      const sig = 1.0857 / S;
-      // 노출을 t배 하면 별빛·하늘빛은 t배, 읽기 잡음은 그대로: (tF)² = want²(tA + n·rn²), A = F + n·sky
-      const A = F + np * sky;
-      const tNeed = (want * want * A + Math.sqrt(Math.pow(want * want * A, 2) + 4 * F * F * want * want * np * rn * rn)) / (2 * F * F);
-      snrOut.append(
-        kpi([[S.toFixed(1), 'S/N (신호 대 잡음비)'], [sig.toFixed(3) + ' 등급', '측정 오차 (1.0857 / S/N)'], [(tNeed < 0.1 ? tNeed.toFixed(3) : tNeed.toFixed(1)) + ' 배','S/N ' + want + '을 얻는 데 필요한 노출 시간']]),
-        h('small', { class: 'muted' }, '노출 시간 ' + (tNeed * 600).toFixed(0) + '초 (지금은 600초). 별빛과 하늘빛은 노출에 비례해 늘지만 읽기 잡음은 그대로예요.'));
-    }
-    [fIn, sIn, nIn, rIn, tgt].forEach((e) => e.addEventListener('input', snr));
-    const loadBtn = h('button', { onclick: () => {
-      const r = ctx.readout();
-      if (!r) return;
-      fIn.value = Math.round(r.flux); sIn.value = r.sky.toFixed(1); nIn.value = Math.round(r.npix); snr();
-    } }, '지금 사진 값 불러오기');
-
-    const d1 = C.chal('① 차등측광 손계산: 목표 별의 등급 직접 구하기', [handBox], hand);
-    const d2 = C.chal('② S/N 계산기: 측정 오차는 어디서 올까?', [
-      h('p', null, h('b', null, 'S/N = 별의 빛 ÷ √(별의 빛 + 하늘빛 + 읽기 잡음)'), ' 이에요. 별이 어두울수록 S/N이 낮아져서 측정 오차가 커져요. 값을 바꿔 보며 어떤 것이 오차에 가장 큰 영향을 주는지 찾아보세요.'),
-      h('div', { class: 'row' },
-        field('별의 빛 F', fIn, '전자'), field('하늘빛', sIn, '전자/픽셀'), field('원 안 픽셀 수', nIn), field('읽기 잡음', rIn, '전자/픽셀'), loadBtn),
-      h('div', { class: 'row', style: { margin: '8px 0' } }, field('목표 S/N', tgt)),
-      snrOut,
-      h('div', { class: 'callout' }, h('b', null, '생각해 보기: '), '별의 빛 F를 10분의 1로 줄여 보세요. 오차는 몇 배가 될까요? 하늘이 훨씬 밝은 보름달 밤이라면(하늘빛을 5배로) 어떨까요?')
-    ], snr);
-    snr();
-    return { zone: C.chalZone([d1, d2]), refresh: hand };
-  };
+  const fx = (v, d) => v.toFixed(d == null ? 2 : d);
 
   // ---------------------------------------------------------------- 4단계
   // ctx: id() → 지금 보는 별, lc() → 광도곡선, P() → 지금 쓰는 주기
   C.chal4 = function (ctx) {
-    // ① 위상 계산 퀴즈
-    const qBox = h('div');
-    let q = null;
-    function newQ() {
-      const lc = ctx.lc(), P = Math.round(ctx.P() * 100) / 100;
-      const t = lc.t[Math.floor(Math.random() * lc.t.length)];
-      q = { t: Math.round(t * 10) / 10, P };
-      drawQ();
-    }
-    function drawQ() {
-      qBox.innerHTML = '';
-      if (!q) { newQ(); return; }
-      const ans = frac(q.t / q.P);
-      const inp = num('', 0.01, 100), res = h('div');
-      qBox.append(
-        h('p', null, '별 ', h('b', null, ctx.id()), '의 주기를 ', h('b', null, q.P + '일'), '이라고 해요. ', h('b', null, 't = ' + q.t + '일'), '에 찍은 사진은 한 주기 중 어디쯤(위상)일까요?'),
-        h('p', { class: 'muted' }, '위상 = (t ÷ P)의 소수 부분. 예: t ÷ P = 3.27 이면 위상은 0.27이에요.'),
-        h('div', { class: 'row' }, field('내 답 (0~1)', inp),
-          h('button', { class: 'primary', onclick: () => {
-            res.innerHTML = '';
-            const v = +inp.value;
-            if (inp.value === '' || !isFinite(v)) { res.append(note('warn', '숫자를 입력해 주세요.')); return; }
-            const d = Math.min(Math.abs(v - ans), 1 - Math.abs(v - ans));
-            res.append(d < 0.02 ? note('good', '정답이에요! ' + q.t + ' ÷ ' + q.P + ' = ' + (q.t / q.P).toFixed(3) + ' → 위상 ' + ans.toFixed(3))
-              : note('bad', '다시 해 보세요. t ÷ P = ' + (q.t / q.P).toFixed(3) + ' 에서 정수 부분을 빼면 돼요.'));
-          } }, '확인'),
-          h('button', { onclick: newQ }, '새 문제')),
-        res);
+    function curve() {
+      const lc = ctx.lc(), P = ctx.P();
+      const fit = C.fourierFit(lc.t, lc.m, P, 3);
+      return { lc, P, fit, at: (x) => fit.model((frac(x) + fit.phase0) * P) };
     }
 
-    // ② 데이터를 줄이면 주기는 얼마나 부정확해질까
-    const cv = h('canvas', { class: 'plot', style: { height: '220px' } });
-    const plot = new C.Plot(cv, { xlabel: '사용한 사진 수', ylabel: '주기 오차 (%)' });
-    const modeSel = h('select', null, h('option', { value: 'first' }, '앞에서부터 n개 (관측 기간이 짧아져요)'), h('option', { value: 'even' }, 'n개를 골고루 뽑기 (기간은 그대로, 점만 줄어요)'));
-    const info = h('div');
-    function run() {
-      const lc = ctx.lc(), Pfull = ctx.P(), N = lc.t.length, mode = modeSel.value;
-      const xs = [], ys = [];
-      for (let n = 8; n <= N; n += 2) {
-        let t, m;
-        if (mode === 'first') { t = lc.t.slice(0, n); m = lc.m.slice(0, n); }
-        else { const idx = []; for (let k = 0; k < n; k++) idx.push(Math.round((k * (N - 1)) / (n - 1))); t = idx.map((i) => lc.t[i]); m = idx.map((i) => lc.m[i]); }
-        try {
-          const pg = C.periodogram(t, m, 1.5, 60);
-          const P = C.refinePeriod(t, m, pg.peaks[0].period);
-          xs.push(n); ys.push((P / Pfull - 1) * 100);
-        } catch (e) { /* 점이 너무 적으면 건너뜀 */ }
-      }
-      const bound = Math.max(5, Math.min(60, Math.max.apply(null, ys.map(Math.abs)) * 1.15));
-      plot.begin(6, N + 2, -bound, bound);
-      plot.line([6, N + 2], [0, 0], { color: '#9db0d6', w: 1 });
-      plot.line([6, N + 2], [4, 4], { color: '#e8890c', w: 1, dash: [5, 4] });
-      plot.line([6, N + 2], [-4, -4], { color: '#e8890c', w: 1, dash: [5, 4] });
-      plot.scatter(xs, ys, { color: '#2563eb', r: 4 });
-      // 그 이후로는 계속 ±4% 안에 머무는 가장 작은 사진 수
-      let stable = null;
-      for (let i = xs.length - 1; i >= 0 && Math.abs(ys[i]) < 4; i--) stable = xs[i];
-      info.innerHTML = '';
-      info.append(h('small', { class: 'muted' }, '주황 점선은 ±4% (이 사이트에서 "주기를 맞혔다"고 보는 기준)예요. ' + (stable ? '사진 ' + stable + '장 이상부터는 계속 ±4% 안에 들어와요.' : '이 조건에서는 ±4% 안에 안정적으로 머물지 못했어요.')));
-    }
-    modeSel.addEventListener('change', run);
+    // ① 위상 손계산
+    const d1 = C.chal('① 위상 직접 계산하기: 컴퓨터가 시각을 위상으로 바꾼 방법', function build(body) {
+      const { lc, P } = curve();
+      const P2 = Math.round(P * 100) / 100;
+      const ts = pick(lc.t, 5).map((t) => Math.round(t * 10) / 10).sort((a, b) => a - b);
+      const rows = ts.map((t) => ({
+        label: '촬영 시각 t = ' + t + '일 → 위상', ans: frac(t / P2), tol: 0.02, circ: true,
+        hint: 't ÷ P = ' + fx(t / P2, 3) + ' 에서 정수 부분을 빼 보세요', show: fx(frac(t / P2), 3) + '  (' + t + ' ÷ ' + P2 + ' = ' + fx(t / P2, 3) + ')'
+      }));
+      body.append(
+        h('p', null, '③ 위상 접기에서 컴퓨터는 모든 촬영 시각을 한 주기 안의 위치(위상)로 바꿨어요. 별 ', h('b', null, ctx.id()), '의 주기를 ', h('b', null, P2 + '일'), '로 놓고, 아래 5장의 위상을 계산기로 직접 구해 보세요.'),
+        h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '위상 = (t ÷ P)의 소수 부분', h('br'), h('small', { class: 'muted' }, '예: t ÷ P = 3.27 이면 위상 0.27 (0과 1은 같은 위치로 봐요)')),
+        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '새 문제')] }));
+    });
 
-    const d1 = C.chal('① 위상 계산 퀴즈: 주기도 없이 손으로 위상 구하기', [qBox], drawQ);
-    const d2 = C.chal('② 사진이 적었다면? 데이터 양과 주기 정확도', [
-      h('p', null, '실제 관측은 사진 수가 한정되어 있어요. 지금 별 데이터에서 일부만 쓰면 주기를 얼마나 틀리게 구할까요? n장만 써서 주기도를 다시 구하고, 전체 데이터로 구한 주기와 비교해요.'),
-      h('div', { class: 'row' }, modeSel, h('button', { class: 'primary', onclick: run }, '실험 시작')),
-      cv, info,
-      h('div', { class: 'callout' }, h('b', null, '생각해 보기: '), '두 방식 중 어느 쪽이 더 빨리 정확해질까요? 주기가 긴 별(예: 25일)과 짧은 별(예: 4일)은 어떻게 다를까요? 다른 변광성을 골라 다시 해 보세요.')
-    ], null);
-    return { zone: C.chalZone([d1, d2]), reset: () => { q = null; qBox.innerHTML = ''; if (d1.open) drawQ(); } };
+    // ② 곡선 읽고 진폭·평균 구하기
+    const d2 = C.chal('② 곡선에서 진폭과 평균 등급 구하기: 푸리에 적합 결과를 손으로 어림해 보기', function (body) {
+      const { fit } = curve();
+      const mmin = Math.min.apply(null, fit.val), mmax = Math.max.apply(null, fit.val);
+      const mid = (mmin + mmax) / 2;
+      const rows = [
+        { label: '가장 밝을 때의 등급 (③ 그래프에서 주황 곡선의 가장 위쪽 값)', ans: mmin, tol: 0.08, hint: '곡선이 가장 위로 올라간 곳의 세로축 값을 읽어 보세요', show: fx(mmin) },
+        { label: '가장 어두울 때의 등급 (주황 곡선의 가장 아래쪽 값)', ans: mmax, tol: 0.08, hint: '곡선이 가장 아래로 내려간 곳의 세로축 값을 읽어 보세요', show: fx(mmax) },
+        { label: '진폭 = 어두울 때 − 밝을 때', unit: '등급', ans: mmax - mmin, tol: 0.12, hint: '큰 값에서 작은 값을 빼요', show: fx(mmax - mmin) },
+        { label: '평균 등급 ≈ (밝을 때 + 어두울 때) ÷ 2', ans: mid, tol: 0.08, hint: '두 값을 더해서 2로 나눠요', show: fx(mid) }
+      ];
+      body.append(
+        h('p', null, '컴퓨터는 점들에 곡선(푸리에 적합)을 맞춘 뒤 그 곡선에서 진폭과 평균 등급 ⟨m⟩을 구했어요. 이번엔 ③ 그래프의 세로축(등급)을 눈으로 읽어서 같은 걸 어림해 보세요. 별 ', h('b', null, ctx.id()), ' 기준이에요.'),
+        h('div', { class: 'callout' }, '등급은 숫자가 작을수록 밝아서, 그래프에서는 위쪽이 밝은 쪽이에요.'),
+        C.quiz(rows, { solution: [
+          h('p', null, '컴퓨터가 구한 평균 등급 ⟨m⟩ = ', h('b', null, fx(fit.meanMag)), ' 이고, 위의 간단한 평균(가장 밝을 때와 어두울 때의 가운데)은 ', h('b', null, fx(mid)), ' 이라서 ', fx(Math.abs(fit.meanMag - mid)), ' 등급 차이가 나요.'),
+          h('p', null, '세페이드는 톱니 모양이라 한 주기 동안 대부분의 시간을 어두운 쪽에서 보내요. 그래서 한 주기 전체를 평균 낸 ⟨m⟩(컴퓨터)이 단순한 가운데 값과 달라요. 다음 단계에서 쓰는 겉보기등급은 컴퓨터가 구한 ⟨m⟩이에요.')
+        ] }));
+    });
+
+    // ③ 모양 판정
+    const d3 = C.chal('③ 세페이드인지 식쌍성인지: 모양 판정을 직접 계산하기', function (body) {
+      const { fit, at } = curve();
+      const amp = fit.amp;
+      let xf = 0, best = -1e9;
+      for (let i = 0; i < 400; i++) { const v = at(i / 400); if (v > best) { best = v; xf = i / 400; } }
+      const mL = at(xf - 0.15), mR = at(xf + 0.15), asym = Math.abs(mR - mL) / amp, sug = C.suggestType(fit);
+      const rows = [
+        { label: '가장 어두운 때의 위상 (③ 그래프에서 곡선이 가장 아래인 곳, 0~1)', ans: xf, tol: 0.06, circ: true, hint: '곡선의 가장 아래 지점의 가로축 값을 읽어 보세요', show: fx(xf) },
+        { label: '그 위상보다 0.15 앞(−0.15)에서의 등급', ans: mL, tol: 0.1, circ: false, hint: '가로축에서 0.15 왼쪽의 곡선 높이를 읽어 보세요', show: fx(mL) },
+        { label: '그 위상보다 0.15 뒤(+0.15)에서의 등급', ans: mR, tol: 0.1, hint: '가로축에서 0.15 오른쪽의 곡선 높이를 읽어 보세요', show: fx(mR) },
+        { label: '비대칭 = |뒤 − 앞| ÷ 진폭', ans: asym, tol: 0.1, hint: '두 등급의 차이를 진폭(' + fx(amp) + ')으로 나눠요', show: fx(asym) + '  (진폭 ' + fx(amp) + ')' },
+        { label: '판정', options: [['cepheid', '세페이드 (비대칭이 커요)'], ['eb', '식쌍성 (좌우가 대칭이에요)']], ans: sug, hint: '비대칭이 0.1보다 큰지 작은지 보세요', show: sug === 'cepheid' ? '세페이드' : '식쌍성' }
+      ];
+      body.append(
+        h('p', null, '컴퓨터는 가장 어두운 때를 기준으로 곡선의 왼쪽과 오른쪽이 얼마나 다른지(비대칭)를 계산해서 별의 종류를 가려냈어요. 세페이드는 비대칭이 크고(톱니), 식쌍성은 거의 0이에요(좌우 대칭). 컴퓨터는 모든 위치를 평균 내지만, 여기서는 한 쌍(±0.15)만 비교해 볼게요. 별 ', h('b', null, ctx.id()), ' 기준이에요.'),
+        C.quiz(rows, { solution: [h('p', null, '비대칭 값이 0.1 정도보다 크면 세페이드, 작으면 식쌍성이라고 컴퓨터는 판정해요. 지금 곡선의 컴퓨터 판정은 "' + (sug === 'cepheid' ? '세페이드' : '식쌍성') + '"예요. (한 쌍만 비교해서 경계에서는 컴퓨터와 다를 수 있어요.)')] }));
+    });
+
+    return { zone: C.chalZone([d1, d2, d3]), reset: () => { [d1, d2, d3].forEach((d) => d.refresh()); } };
   };
 
   // ---------------------------------------------------------------- 5단계
-  // ctx: rows() → 사용 중인 세페이드들, calibDone() → 보정 관계를 만들었는지
+  // ctx: rows() → 쓰는 세페이드들, calibDone() → 보정 관계를 만들었는지
   C.chal5 = function (ctx) {
-    // ① 손으로 직선 맞추기
-    const cv = h('canvas', { class: 'plot tall' });
-    const plot = new C.Plot(cv, { xlabel: 'log P', ylabel: '겉보기등급 ⟨m⟩', invertY: true });
-    const sA = h('input', { type: 'range', min: -5, max: 0, step: 0.01, value: -2 });
-    const sB = h('input', { type: 'range', min: 15, max: 30, step: 0.01, value: 21 });
-    const lblA = h('b'), lblB = h('b'), fitOut = h('div');
-    let showBest = false;
-    function fit() {
-      const rows = ctx.rows();
-      fitOut.innerHTML = '';
-      if (rows.length < 3) { fitOut.append(note('warn', '쓸 수 있는 세페이드가 3개 미만이에요.')); return; }
-      const xs = rows.map((r) => r.logP), ys = rows.map((r) => r.m);
-      const a = +sA.value, b = +sB.value;
-      lblA.textContent = a.toFixed(2); lblB.textContent = b.toFixed(2);
+    // ① 시차 → 거리 → 절대등급
+    const d1 = C.chal('① 시차에서 절대등급까지 직접 계산하기: 눈금을 만든 방법', function build(body) {
+      const cr = C.calibRows(), r = pick(cr, 1)[0];
+      const rows = [
+        { label: '거리 d = 1000 ÷ 시차 p', unit: 'pc', ans: r.d, tolRel: 0.01, hint: '시차 ' + r.parallax + '로 1000을 나눠요', show: fx(r.d, 0) + ' pc  (1000 ÷ ' + r.parallax + ')' },
+        { label: '절대등급 M = m − 5 log₁₀(d ÷ 10)', ans: r.M, tol: 0.05, hint: '5 × log₁₀(d÷10) 를 m에서 빼요', show: fx(r.M) + '  (' + fx(r.mV) + ' − 5 × log₁₀(' + fx(r.d, 0) + ' ÷ 10))' }
+      ];
+      body.append(
+        h('p', null, '위 ②에서 컴퓨터는 거리를 아는 세페이드의 시차로 절대등급을 구했어요. 별 하나를 직접 계산해 보세요.'),
+        h('div', { class: 'kpi' },
+          h('div', null, h('div', { class: 'v' }, r.name), h('div', { class: 'l' }, '주기 ' + fx(r.P, 1) + '일')),
+          h('div', null, h('div', { class: 'v' }, fx(r.parallax, 3)), h('div', { class: 'l' }, '시차 p (밀리각초)')),
+          h('div', null, h('div', { class: 'v' }, fx(r.mV)), h('div', { class: 'l' }, '겉보기등급 m'))),
+        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
+    });
+
+    // ② 최소제곱 직선
+    const d2 = C.chal('② 직선의 기울기 직접 구하기: 컴퓨터가 맞춘 직선을 손으로 계산해 보기', function (body) {
+      const rows0 = ctx.rows().slice(0, 4);
+      if (rows0.length < 3) { body.append(note('warn', '쓸 수 있는 세페이드가 3개 미만이에요.')); return; }
+      const xs = rows0.map((r) => r.logP), ys = rows0.map((r) => r.m), n = xs.length;
+      const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
       const lr = C.linreg(xs, ys);
-      const mine = Math.sqrt(rows.reduce((s, r) => s + Math.pow(r.m - (a * (r.logP - 1) + b), 2), 0) / rows.length);
-      const yr = C.padRange(ys.concat([a * -0.3 + b, a * 0.7 + b].map((v) => Math.max(15, Math.min(30, v)))), 0.15);
-      plot.begin(0.3, 1.7, yr[0], yr[1]);
-      plot.scatter(xs, ys, { color: '#12a36a', r: 4.5 });
-      plot.line([0.3, 1.7], [a * (0.3 - 1) + b, a * (1.7 - 1) + b], { color: '#2563eb', w: 2 });
-      if (showBest) plot.line([0.3, 1.7], [lr.intercept + lr.slope * 0.3, lr.intercept + lr.slope * 1.7], { color: '#e8890c', w: 2, dash: [6, 4] });
-      fitOut.append(kpi([[mine.toFixed(3), '내 직선의 어긋남 (rms, 등급)'], [showBest ? lr.rms.toFixed(3) : '?', '컴퓨터가 구한 최적 직선의 rms'], [showBest ? lr.slope.toFixed(2) : '?', '최적 기울기']]));
-      if (showBest) fitOut.append(note(mine < lr.rms * 1.3 ? 'good' : 'warn', mine < lr.rms * 1.3 ? '거의 최적이에요! 눈으로도 이렇게 맞출 수 있어요. 컴퓨터는 이걸 "최소제곱법"으로 정확히 계산해 줘요.' : '최적 직선보다 어긋남이 커요. 기울기와 높이를 다시 조절해 보세요.'));
-    }
-    [sA, sB].forEach((e) => e.addEventListener('input', fit));
-    const d1 = C.chal('① 손으로 직선 맞추기: 컴퓨터보다 잘할 수 있을까?', [
-      h('p', null, '점들이 가장 잘 모이는 직선을 직접 찾아보세요. 직선은 m = a × (log P − 1) + b 예요. 기울기 a와 높이 b를 슬라이더로 바꿔요.'),
-      h('div', { class: 'row' }, h('span', null, '기울기 a ', lblA), sA),
-      h('div', { class: 'row' }, h('span', null, '높이 b ', lblB), sB),
-      cv, fitOut,
-      h('button', { onclick: () => { showBest = !showBest; fit(); } }, '최적 직선 보기/숨기기')
-    ], fit);
+      const at1 = lr.intercept + lr.slope;
+      const rows = [
+        { label: 'log P의 평균 x̄', ans: mx, tol: 0.005, hint: '네 값을 더해서 ' + n + '으로 나눠요', show: fx(mx, 3) },
+        { label: 'm의 평균 ȳ', ans: my, tol: 0.01, hint: '네 값을 더해서 ' + n + '으로 나눠요', show: fx(my, 3) },
+        { label: '기울기 a = Σ(x−x̄)(y−ȳ) ÷ Σ(x−x̄)²', ans: lr.slope, tol: 0.05 * Math.abs(lr.slope) + 0.03, hint: '분자와 분모를 각각 합해서 나눠요', show: fx(lr.slope) },
+        { label: 'log P = 1 일 때 직선이 지나는 m = ȳ + a(1 − x̄)', ans: at1, tol: 0.08, hint: 'ȳ에 a × (1 − x̄)를 더해요', show: fx(at1) }
+      ];
+      body.append(
+        h('p', null, '위 ①에서 컴퓨터는 점들에 가장 잘 맞는 직선을 구했어요(최소제곱법). 쓰는 세페이드 중 앞의 ' + n + '개로 같은 계산을 직접 해 보세요.'),
+        h('table', { style: { maxWidth: '340px' } }, h('tr', null, h('th', null, '별'), h('th', null, 'x = log P'), h('th', null, 'y = m')),
+          rows0.map((r) => h('tr', null, h('td', null, r.id), h('td', { class: 'mono' }, fx(r.logP, 3)), h('td', { class: 'mono' }, fx(r.m))))),
+        C.quiz(rows, { solution: [h('p', null, '기울기는 "log P가 1 늘 때 겉보기등급이 얼마나 변하는가"예요. 음수라는 건 주기가 길수록 숫자가 작다, 즉 더 밝다는 뜻이에요. 위 ①에서 컴퓨터가 모든 별로 구한 기울기와도 비슷한지 비교해 보세요.')] }));
+    });
 
-    // ② 한 별 끝까지 계산해 보기
-    const rows0 = ctx.rows();
-    const pIn = num(rows0.length ? rows0[0].P.toFixed(2) : 10, 0.1), mIn = num(rows0.length ? rows0[0].m.toFixed(2) : 21, 0.01);
-    const calcOut = h('div');
-    function calc() {
-      calcOut.innerHTML = '';
-      if (!ctx.calibDone()) { calcOut.append(note('warn', '위 ②에서 "시차 → 거리 → 절대등급 계산하기" 버튼을 먼저 눌러 주세요. 그러면 계산에 쓸 주기-광도 관계가 만들어져요.')); return; }
-      const P = +pIn.value, m = +mIn.value;
-      if (!(P > 0 && isFinite(m))) { calcOut.append(note('warn', '주기와 겉보기등급을 넣어 주세요.')); return; }
-      const rel = C.calibRelation();
-      const lp = Math.log10(P), M = rel.a * (lp - 1) + rel.b, mu = m - M, d = C.distFromMu(mu);
-      calcOut.append(
-        h('div', { class: 'formula' }, 'log P = ' + lp.toFixed(3), h('br'), 'M = ' + rel.a.toFixed(2) + ' × (' + lp.toFixed(3) + ' − 1) + (' + rel.b.toFixed(2) + ') = ', h('span', { class: 'hl' }, M.toFixed(2))),
-        kpi([[Math.round(C.lumSun(M)).toLocaleString('ko-KR') + ' L☉', '광도 (태양 = 1)'], [mu.toFixed(2), '거리 모듈러스 μ = m − M'], [C.pcFmt(d), '이 별만으로 구한 거리']]),
-        h('small', { class: 'muted' }, '광도 L = 10^(0.4 × (4.83 − M))  (태양의 절대등급은 4.83)'));
-    }
-    [pIn, mIn].forEach((e) => e.addEventListener('input', calc));
-    const d2 = C.chal('② 별 하나를 끝까지: 주기 → 절대등급 → 광도 → 거리', [
-      h('p', null, '주기 P와 겉보기등급 m만 알면 한 번에 계산할 수 있어요. 다른 값을 넣어 보세요. 주기가 두 배가 되면 광도는 몇 배가 될까요?'),
-      h('div', { class: 'row' }, field('주기 P', pIn, '일'), field('겉보기등급 m', mIn)), calcOut
-    ], calc);
+    // ③ 광도 계산
+    const d3 = C.chal('③ 주기에서 광도까지 직접 계산하기: 관계식을 적용한 방법', function build(body) {
+      if (!ctx.calibDone()) { body.append(note('warn', '위 ②에서 "시차 → 거리 → 절대등급 계산하기" 버튼을 먼저 눌러 주세요. 그러면 계산에 쓸 주기-광도 관계가 만들어져요.')); return; }
+      const use = ctx.rows();
+      if (!use.length) { body.append(note('warn', '쓸 수 있는 세페이드가 없어요.')); return; }
+      const r = pick(use, 1)[0], rel = C.calibRelation();
+      const lp = Math.log10(r.P), M = rel.a * (lp - 1) + rel.b, L = C.lumSun(M);
+      const rows = [
+        { label: 'log P = log₁₀(P)', ans: lp, tol: 0.004, hint: '계산기의 log 키로 ' + fx(r.P) + '의 상용로그를 구해요', show: fx(lp, 3) },
+        { label: '절대등급 M = a(log P − 1) + b', ans: M, tol: 0.03, hint: 'a와 b는 위 관계식의 값을 쓰세요', show: fx(M) + '  (' + fx(rel.a) + ' × (' + fx(lp, 3) + ' − 1) + (' + fx(rel.b) + '))' },
+        { label: '광도 L = 10^(0.4 × (4.83 − M))', unit: '태양의 몇 배', ans: L, tolRel: 0.04, hint: '4.83 − M 에 0.4를 곱해서 10의 거듭제곱을 해요', show: Math.round(L).toLocaleString('ko-KR') + ' 배' }
+      ];
+      body.append(
+        h('p', null, '위 ③에서 컴퓨터는 주기만으로 각 세페이드의 진짜 밝기를 구했어요. 별 ', h('b', null, r.id), '(주기 ', h('b', null, fx(r.P) + '일'), ')를 직접 계산해 보세요.'),
+        h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '관계식: M = ', h('span', { class: 'hl' }, fx(rel.a)), ' × (log P − 1) + (', h('span', { class: 'hl' }, fx(rel.b)), ')', h('br'), h('small', { class: 'muted' }, '태양의 절대등급은 4.83이에요.')),
+        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
+    });
 
-    // ③ 보정 별을 빼 보기
-    const cr = C.calibRows();
-    const on = cr.map(() => true);
-    const sumOut = h('div');
-    function calib() {
-      const use = cr.filter((r, i) => on[i]), rows = ctx.rows();
-      sumOut.innerHTML = '';
-      if (use.length < 3) { sumOut.append(note('warn', '보정 별을 3개 이상 남겨 주세요.')); return; }
-      if (rows.length < 3) { sumOut.append(note('warn', '쓸 수 있는 세페이드가 3개 미만이에요.')); return; }
-      const full = C.calibRelation();
-      const lr = C.linreg(use.map((r) => r.logP - 1), use.map((r) => r.M));
-      const dist = (a, b) => C.distFromMu(rows.reduce((s, r) => s + r.m - (a * (r.logP - 1) + b), 0) / rows.length);
-      const d0 = dist(full.a, full.b), d1 = dist(lr.slope, lr.intercept);
-      sumOut.append(
-        kpi([[lr.slope.toFixed(2), '기울기 (전부 쓴 값 ' + full.a.toFixed(2) + ')'], [lr.intercept.toFixed(2), '기준값 b (전부 쓴 값 ' + full.b.toFixed(2) + ')'], [C.pcFmt(d1), '그때의 거리 (전부 쓰면 ' + C.pcFmt(d0) + ')'], [((d1 / d0 - 1) * 100).toFixed(1) + ' %', '거리 변화']]),
-        h('small', { class: 'muted' }, '(성간소광 보정은 빼고 비교한 값이에요.)'));
-    }
-    const boxes = h('div', { class: 'row' }, cr.map((r, i) => h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { on[i] = e.target.checked; calib(); } }), h('span', null, r.name + ' (P=' + r.P.toFixed(1) + '일)'))));
-    const d3 = C.chal('③ 보정 별을 빼 보면? 기준값은 얼마나 흔들릴까', [
-      h('p', null, '주기-광도 관계의 기준값은 거리를 아는 7개 별로 정했어요. 별을 하나씩 빼 보며 기울기와 최종 거리가 얼마나 바뀌는지 확인해 보세요. 별이 많을수록 왜 믿을 만해질까요?'),
-      boxes, sumOut
-    ], calib);
-    return { zone: C.chalZone([d1, d2, d3]), refresh: () => { calc(); fit(); } };
+    return { zone: C.chalZone([d1, d2, d3]), refresh: () => { d2.refresh(); d3.refresh(); } };
   };
 
   // ---------------------------------------------------------------- 6단계
-  // ctx: list → {m, logP}[], rel, gal, revealed()
+  // ctx: list → {id, m, logP, M}[] (쓰는 세페이드, 먼지 보정 없이), gal
   C.chal6 = function (ctx) {
-    // ① 오차 전파
-    const dm = num(0.05, 0.01, 70), dM = num(ctx.rel.rms.toFixed(2), 0.01, 70), errOut = h('div');
-    function err() {
-      const a = +dm.value, b = +dM.value;
-      errOut.innerHTML = '';
-      if (!(a >= 0 && b >= 0)) { errOut.append(note('warn', '0 이상의 값을 넣어 주세요.')); return; }
-      const dmu = Math.sqrt(a * a + b * b), pct = dmu * Math.LN10 / 5 * 100, n = ctx.list.length;
-      errOut.append(
-        kpi([[dmu.toFixed(3) + ' 등급', '거리 모듈러스 오차 √(δm² + δM²)'], [pct.toFixed(1) + ' %', '별 하나의 거리 오차'], [(pct / Math.sqrt(n)).toFixed(1) + ' %', '별 ' + n + '개를 평균하면']]),
-        h('small', { class: 'muted' }, '거리 d = 10^((μ+5)/5) 이므로 δd/d = (ln10 / 5) × δμ ≈ 0.46 × δμ. 거리 오차를 5% 안으로 하려면 δμ가 약 0.11 등급 이하여야 해요.'));
-    }
-    [dm, dM].forEach((e) => e.addEventListener('input', err));
-    const d1 = C.chal('① 오차 전파 계산기: 밝기 오차는 거리 오차를 얼마나 만들까', [
-      h('p', null, '밝기를 0.1등급만 잘못 재면 거리는 몇 % 틀릴까요? 겉보기등급 오차 δm과 절대등급 오차 δM을 넣어 보세요.'),
-      h('div', { class: 'row' }, field('δm', dm, '등급'), field('δM', dM, '등급 (기본값 = 5단계 관계식의 흩어진 정도)')), errOut
-    ], err);
+    const list = ctx.list, n = list.length;
+    const mus = list.map((r) => r.m - r.M);
+    const mean = mus.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(mus.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (n - 1));
+    const sem = sd / Math.sqrt(n);
+    const dK = (mu) => C.distFromMu(mu) / 1000;   // kpc
+    const dMean = dK(mean), dErr = dMean * Math.LN10 / 5 * sem;
+    const A = ctx.gal.Av;
+    const note0 = h('div', { class: 'callout' }, '이 과제의 계산은 ', h('b', null, '먼지 보정 없이'), ' 해요. (표와 비교하려면 위의 "먼지 보정" 체크를 끄고 보세요. 먼지 보정은 ④에서 따로 해 봐요.)');
 
-    // ② 먼지 보정 슬라이더
-    const aS = h('input', { type: 'range', min: 0, max: 1, step: 0.01, value: 0 });
-    const aLbl = h('b'), aOut = h('div');
-    function ext() {
-      const A = +aS.value, n = ctx.list.length;
-      aLbl.textContent = A.toFixed(2);
-      aOut.innerHTML = '';
-      const mu = ctx.list.reduce((s, r) => s + r.m - A - r.M, 0) / n, d = C.distFromMu(mu);
-      const base = C.distFromMu(ctx.list.reduce((s, r) => s + r.m - r.M, 0) / n);
-      aOut.append(kpi([[mu.toFixed(2), '평균 거리 모듈러스 μ'], [C.pcFmt(d), '거리'], [((d / base - 1) * 100).toFixed(1) + ' %', '보정 안 했을 때와 비교']]));
-      if (ctx.revealed()) {
-        const truth = C.distFromMu(ctx.gal.mu);
-        aOut.append(h('small', { class: 'muted' }, '실제 거리(' + C.pcFmt(truth) + ')와의 오차: ' + ((d / truth - 1) * 100).toFixed(1) + ' %. 오차가 가장 작아지는 값을 찾아보세요!'));
-      } else aOut.append(h('small', { class: 'muted' }, '위에서 "정답 확인하기"를 누르면 이 값이 실제 거리와 얼마나 가까운지도 볼 수 있어요.'));
-    }
-    aS.addEventListener('input', ext);
-    const d2 = C.chal('② 먼지 보정 값을 직접 정해 보기', [
-      h('p', null, '실제 연구에서는 먼지로 어두워진 정도(A_V)를 직접 재야 해요. A_V를 0에서 1등급까지 바꿔 보며 거리가 얼마나 달라지는지 보세요.'),
-      h('div', { class: 'row' }, h('span', null, 'A_V = ', aLbl, ' 등급'), aS), aOut
-    ], ext);
+    const d1 = C.chal('① 별 하나의 거리 직접 계산하기: 포그슨 방정식 적용', function build(body) {
+      const r = pick(list, 1)[0], mu = r.m - r.M;
+      const rows = [
+        { label: '거리 모듈러스 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: fx(mu) },
+        { label: '거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dK(mu), tolRel: 0.015, hint: '(μ+5)÷5 를 구해 10의 거듭제곱을 한 뒤 1000으로 나눠 kpc로 바꿔요', show: fx(dK(mu), 1) + ' kpc  (= ' + fx(C.distFromMu(mu), 0) + ' pc)' }
+      ];
+      body.append(
+        h('p', null, '위 표에서 컴퓨터가 별마다 계산한 값을 직접 구해 보세요. 별 ', h('b', null, r.id), ' 이에요.'),
+        h('div', { class: 'kpi' },
+          h('div', null, h('div', { class: 'v' }, fx(r.m)), h('div', { class: 'l' }, '겉보기등급 m')),
+          h('div', null, h('div', { class: 'v' }, fx(r.M)), h('div', { class: 'l' }, '절대등급 M'))),
+        note0,
+        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
+    });
 
-    // ③ 변환기
-    const muIn = num(24.6, 0.01, 90), dIn = num(850, 1, 100), convOut = h('div');
-    function conv() {
-      convOut.innerHTML = '';
-      const mu = +muIn.value, dk = +dIn.value;
-      const rows = [];
-      if (isFinite(mu)) { const d = C.distFromMu(mu); rows.push(['μ = ' + mu.toFixed(2) + ' → d = ' + C.pcFmt(d) + ' = ' + C.lyFmt(d), '이 빛은 약 ' + (d * 3.26156 / 1e4).toFixed(0) + '만 년 전에 별을 떠난 거예요.']); }
-      if (dk > 0) rows.push(['d = ' + dk + ' kpc → μ = ' + C.muFromDist(dk * 1000).toFixed(2), '5 log₁₀(' + (dk * 100).toFixed(0) + ') = ' + C.muFromDist(dk * 1000).toFixed(2)]);
-      rows.forEach((r) => convOut.append(h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, r[0], h('br'), h('small', { class: 'muted' }, r[1]))));
-    }
-    [muIn, dIn].forEach((e) => e.addEventListener('input', conv));
-    const d3 = C.chal('③ 거리 모듈러스 ↔ 거리 변환기', [
-      h('p', null, '두 칸 중 아는 쪽에 값을 넣어 보세요. 거리 모듈러스가 5 커지면 거리는 몇 배가 될까요?'),
-      h('div', { class: 'row' }, field('거리 모듈러스 μ', muIn), field('거리 d', dIn, 'kpc')), convOut
-    ], conv);
-    return { zone: C.chalZone([d1, d2, d3]), refresh: ext };
+    const d2 = C.chal('② 평균과 오차 직접 계산하기: 별들의 μ를 종합하는 방법', function (body) {
+      const rows = [
+        { label: '평균 μ = (μ₁ + μ₂ + … ) ÷ ' + n, ans: mean, tol: 0.01, hint: '모든 μ를 더해 ' + n + '으로 나눠요', show: fx(mean) },
+        { label: '표준편차 s = √[ Σ(μ − 평균)² ÷ (' + n + ' − 1) ]', ans: sd, tol: 0.015, hint: '편차의 제곱을 모두 더해 ' + (n - 1) + '로 나눈 뒤 제곱근을 구해요', show: fx(sd, 3) },
+        { label: '표준오차 = s ÷ √' + n, ans: sem, tol: 0.006, hint: 's를 √' + n + '(≈' + fx(Math.sqrt(n), 2) + ')으로 나눠요', show: fx(sem, 3) }
+      ];
+      body.append(
+        h('p', null, '컴퓨터는 별마다 구한 μ를 평균 내고, 별들 사이의 흩어진 정도로 오차를 구했어요. 아래 ' + n + '개 값으로 같은 계산을 해 보세요.'),
+        h('table', { style: { maxWidth: '280px' } }, h('tr', null, h('th', null, '별'), h('th', null, 'μ = m − M')),
+          list.map((r, i) => h('tr', null, h('td', null, r.id), h('td', { class: 'mono' }, fx(mus[i]))))),
+        note0,
+        C.quiz(rows, { solution: [h('p', null, '표준오차는 "별이 많을수록 평균이 믿을 만해진다"는 걸 숫자로 보여줘요. 별이 4배 많아지면 오차는 절반이 돼요.')] }));
+    });
+
+    const d3 = C.chal('③ 최종 거리와 오차 직접 계산하기', function (body) {
+      const rows = [
+        { label: '평균 μ로 구한 거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dMean, tolRel: 0.015, hint: '평균 μ = ' + fx(mean) + ' 를 포그슨 식에 넣어요', show: fx(dMean, 1) + ' kpc' },
+        { label: '거리 오차 δd = d × (ln 10 ÷ 5) × 표준오차', unit: 'kpc', ans: dErr, tolRel: 0.15, hint: 'ln 10 ÷ 5 ≈ 0.46 이에요. d에 0.46과 표준오차 ' + fx(sem, 3) + ' 를 곱해요', show: fx(dErr, 1) + ' kpc  (' + fx(dMean, 1) + ' × 0.4605 × ' + fx(sem, 3) + ')' }
+      ];
+      body.append(
+        h('p', null, '평균 μ = ', h('b', null, fx(mean)), ', 표준오차 = ', h('b', null, fx(sem, 3)), ' 일 때 최종 거리와 거리 오차를 구해 보세요. (위 \"이 은하까지의 거리\" 칸에서 컴퓨터가 낸 값과 비교해 보세요.)'),
+        note0,
+        C.quiz(rows, { solution: [h('p', null, 'μ가 0.1등급 달라지면 거리는 약 4.6% 달라져요. 그래서 밝기를 정확히 재는 일이 중요해요.')] }));
+    });
+
+    const d4 = C.chal('④ 먼지 보정 직접 해 보기: 성간소광 A_V 빼기', function (body) {
+      const muC = mean - A, dC = dK(muC);
+      const rows = [
+        { label: "보정한 μ' = 평균 μ − A_V", ans: muC, tol: 0.01, hint: '평균 μ에서 ' + fx(A) + ' 를 빼요', show: fx(muC) },
+        { label: "보정한 거리 d' = 10^((μ' + 5) ÷ 5)", unit: 'kpc', ans: dC, tolRel: 0.015, hint: "μ' 를 포그슨 식에 넣어요", show: fx(dC, 1) + ' kpc' }
+      ];
+      body.append(
+        h('p', null, '먼지가 별빛을 가리면 별이 더 어둡게 보여서 거리가 실제보다 멀게 계산돼요. 이 은하 방향의 먼지 때문에 어두워진 정도는 ', h('b', null, 'A_V = ' + fx(A) + ' 등급'), ' 이에요. 평균 μ = ' + fx(mean) + ' 에서 보정해 보세요.'),
+        C.quiz(rows, { solution: [h('p', null, '위의 "먼지 보정" 체크를 켜면 컴퓨터가 구한 보정 값과 같은 결과가 나와요. 보정 전과 거리가 ' + fx((dMean / dC - 1) * 100, 1) + '% 달라지는 걸 확인해 보세요.')] }));
+    });
+
+    return { zone: C.chalZone([d1, d2, d3, d4]), refresh: () => {} };
   };
 })(typeof window !== 'undefined' ? window : globalThis);

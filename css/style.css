@@ -190,3 +190,16 @@ dialog.ask { max-width: 420px; }
 .chal-body { margin-top: 8px; }
 .kv { display: inline-flex; gap: 6px; align-items: center; }
 .chal .formula { font-size: 1.05rem; }
+
+/* ---- 3단계 직접 정해 보기 ---- */
+.manual { margin-top: 12px; padding: 10px 12px; border: 2px dashed #9db8f0; border-radius: 10px; background: #f6faff; }
+.chk-row { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.chk-row .ico { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700; color: #fff; flex: none; margin-top: 2px; }
+.chk-row.ok .ico { background: var(--green); }
+.chk-row.warn .ico { background: var(--orange); }
+.chk-row.bad .ico { background: var(--red); }
+table.quiz td { text-align: left; vertical-align: middle; }
+table.quiz td.qmark { font-size: .88rem; }
+table.quiz td.qmark.ok { color: var(--green); font-weight: 700; }
+table.quiz td.qmark.bad { color: var(--red); }
+table.quiz td.qmark.warn { color: var(--orange); }

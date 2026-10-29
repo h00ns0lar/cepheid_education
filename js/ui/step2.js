@@ -135,8 +135,7 @@
             thumbs, h('div', { style: { marginTop: '8px' } }, log))),
         h('details', null, h('summary', null, '관측은 이렇게 이루어져요'),
           h('p', null, '가상의 큰 망원경에 V 필터(사람 눈에 가장 가까운 노란-초록빛만 통과시키는 필터)를 끼우고, 한 장에 10분(600초)씩 찍어요. 하늘 상태는 밤마다 달라서 어떤 밤은 구름이 끼고, 어떤 밤은 대기가 흔들려 별이 번져 보여요(시상). 망원경을 매일 쓸 수도 없어서 촬영 간격은 ', h('b', null, '불규칙'), '합니다. 그래서 4단계에서는 간격이 불규칙해도 쓸 수 있는 방법(Lomb–Scargle)을 써요.'),
-          h('p', null, '이번에 선택한 변광성 주변 사진은 ' + ids.length + '곳 × ' + nOk + '번 = ' + (ids.length * nOk) + '장입니다. (교육용 시뮬레이션이라 사진 한 장에는 변광성 주변의 좁은 하늘만 담겨요.)')),
-        C.chalZone([C.chal2(sched)]));
+          h('p', null, '이번에 선택한 변광성 주변 사진은 ' + ids.length + '곳 × ' + nOk + '번 = ' + (ids.length * nOk) + '장입니다. (교육용 시뮬레이션이라 사진 한 장에는 변광성 주변의 좁은 하늘만 담겨요.)')));
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
