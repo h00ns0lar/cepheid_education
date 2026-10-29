@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세페이드로 은하까지 거리 재기</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">✦</span><div><b>세페이드 거리 측정 체험</b><small>변광성 하나로 은하까지의 거리를 재 봅시다</small></div></div>
+  <nav id="stepper" aria-label="진행 단계"></nav>
+  <div class="tools">
+    <button id="btn-gloss" class="ghost">용어집</button>
+    <button id="btn-reset" class="ghost">처음부터</button>
+  </div>
+</header>
+
+<main id="stage" tabindex="-1"></main>
+
+<footer class="bottom">
+  <button id="btn-prev" class="ghost">← 이전</button>
+  <div id="nav-hint" class="hint"></div>
+  <button id="btn-next" class="primary">다음 →</button>
+</footer>
+
+<dialog id="gloss">
+  <form method="dialog"><button class="close" aria-label="닫기">✕</button></form>
+  <h2>용어집</h2>
+  <dl id="gloss-body"></dl>
+</dialog>
+
+<script src="js/core/rng.js"></script>
+<script src="js/core/galaxies.js"></script>
+<script src="js/core/sim.js"></script>
+<script src="js/core/photometry.js"></script>
+<script src="js/core/timeseries.js"></script>
+<script src="js/core/plfit.js"></script>
+<script src="js/core/pipeline.js"></script>
+<script src="js/ui/util.js"></script>
+<script src="js/ui/charts.js"></script>
+<script src="js/ui/step1.js"></script>
+<script src="js/ui/step2.js"></script>
+<script src="js/ui/step3.js"></script>
+<script src="js/ui/step4.js"></script>
+<script src="js/ui/step5.js"></script>
+<script src="js/ui/step6.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
