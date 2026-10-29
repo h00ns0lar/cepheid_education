@@ -9,6 +9,7 @@
       const ids = S.picked;
       let cur = ids[0];
       let Pc = null;          // 슬라이더 중심 주기
+      let chal = null;
 
       const chips = h('div', { class: 'chips' });
       const cvTime = h('canvas', { class: 'plot', style: { height: '190px' } });
@@ -41,7 +42,7 @@
         chips.innerHTML = '';
         ids.forEach((id) => {
           const ty = typeOf(id);
-          chips.append(h('div', { class: 'chip' + (id === cur ? ' cur' : ''), onclick: () => { cur = id; Pc = null; redraw(); } },
+          chips.append(h('div', { class: 'chip' + (id === cur ? ' cur' : ''), onclick: () => { cur = id; Pc = null; redraw(); if (chal) chal.reset(); } },
             id, h('span', { class: 's' }, ty === 'cepheid' ? '🟢세페이드' : ty === 'eb' ? '⚪식쌍성' : S.an[id] ? '…' : '')));
         });
       }
@@ -149,6 +150,8 @@
         S.plFit = false; C.save(); redraw(); C.refreshNav();
       } }, '모양을 보고 자동으로 분류하기');
 
+      chal = C.chal4({ id: () => cur, lc: lcOf, P: curP });
+
       root.append(
         h('h2', null, '4단계 · 시간에 따른 밝기 분석(시계열분석): 주기 찾기'),
         h('p', { class: 'lead' }, '3단계에서 얻은 "시간에 따른 밝기 그래프"(광도곡선)에서 밝기가 되풀이되는 주기를 찾아요. 촬영 간격이 불규칙해서 Lomb–Scargle 주기도라는 방법을 써요. 그다음 찾은 주기로 그래프를 한 주기 길이로 "접어서", 점들이 매끈한 곡선 위에 모이는지 확인해요.'),
@@ -166,7 +169,8 @@
           h('p', null, h('b', null, '주기도'), ': 가로축은 시험해 본 주기, 세로축은 그 주기로 되풀이되는 물결(사인파)이 자료와 얼마나 잘 맞는지예요. 가장 높은 봉우리가 후보 주기입니다. 밝기 곡선이 톱니 모양이면 진짜 주기의 1/2, 1/3 자리에도 작은 가짜 봉우리가 생겨요.'),
           h('p', null, h('b', null, '위상 접기'), ': 모든 관측 시각을 "한 주기 중 어디쯤인가(0~1, 위상)"로 바꿔서 한 주기 안에 겹쳐 그려요. 주기가 맞으면 점들이 하나의 매끈한 곡선 위에 모이고, 틀리면 흩어져요. 슬라이더로 주기를 조금씩 바꿔서 점들이 가장 매끈하게 모이는 값을 찾아보세요.'),
           h('p', null, h('b', null, '곡선 맞추기(푸리에 적합)'), ': 주황 곡선은 물결(사인파) 3개를 더해 점들에 맞춘 곡선이에요. 이 곡선에서 평균 등급 ⟨m⟩과 밝기 변화 폭(진폭)을 구해요. 이 ⟨m⟩이 다음 단계에서 쓸 "겉보기등급"입니다.'),
-          h('p', null, h('b', null, '세페이드 vs 식쌍성'), ': 세페이드는 톱니 모양(빨리 밝아지고 천천히 어두워짐), 식쌍성은 평평하다가 뾰족하게 어두워지는 좌우 대칭 곡선이에요.')));
+          h('p', null, h('b', null, '세페이드 vs 식쌍성'), ': 세페이드는 톱니 모양(빨리 밝아지고 천천히 어두워짐), 식쌍성은 평평하다가 뾰족하게 어두워지는 좌우 대칭 곡선이에요.')),
+        chal.zone);
 
       redraw();
     }

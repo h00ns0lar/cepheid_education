@@ -11,7 +11,7 @@
       const eps = R.schedule.epochs, N = eps.length;
       const ids = S.picked, first = ids[0];
       if (!S.comps[first]) S.comps[first] = [];
-      let cur = first, fi = Math.floor(N / 2), hover = null, timer = null;
+      let cur = first, fi = Math.floor(N / 2), hover = null, timer = null, lastRead = null, chal = null;
 
       const view = h('canvas', { class: 'view', style: { width: '100%', maxWidth: '500px', aspectRatio: '1' } });
       const slider = h('input', { type: 'range', min: 0, max: N - 1, value: fi });
@@ -71,6 +71,7 @@
         const c = C.centroid(R.frames[cur][fi], st.W, st.H, st.stars[0].x + e.jx, st.stars[0].y + e.jy, 1.2 * e.fwhm);
         const a = C.aperture(R.frames[cur][fi], st.W, st.H, c.x, c.y, ap.rAp, ap.rIn, ap.rOut);
         const f = Math.max(a.flux, 1);
+        lastRead = { flux: a.flux, sky: a.sky, npix: a.npix };
         readout.innerHTML = '';
         readout.append(h('table', null,
           h('tr', null, h('td', null, '원(구경) 안의 빛 전부'), h('td', { class: 'mono' }, (a.flux + a.sky * a.npix).toFixed(0))),
@@ -180,7 +181,7 @@
         }
       }
 
-      function redraw() { drawChips(); drawView(); drawCharts(); drawComps(); drawBatch(); }
+      function redraw() { drawChips(); drawView(); drawCharts(); drawComps(); drawBatch(); if (chal) chal.refresh(); }
 
       // ---------- 이벤트 ----------
       function pick(e) {
@@ -203,13 +204,18 @@
         }
       });
       view.addEventListener('click', (e) => { const s = pick(e); if (s) toggleComp(s.id); });
-      slider.addEventListener('input', () => { fi = +slider.value; drawView(); drawCharts(); });
+      slider.addEventListener('input', () => { fi = +slider.value; drawView(); drawCharts(); if (chal) chal.refresh(); });
       playBtn.onclick = () => {
         if (timer) { clearInterval(timer); timer = null; playBtn.textContent = '▶ 재생'; return; }
         playBtn.textContent = '⏸ 멈춤';
         timer = setInterval(() => { fi = (fi + 1) % N; slider.value = fi; drawView(); drawCharts(); }, 260);
       };
       C.onLeave(() => { if (timer) clearInterval(timer); });
+
+      chal = C.chal3({
+        state: () => ({ cur, fi, eps, ph: C.getPhot(cur), chosen: sel() }),
+        readout: () => { if (!lastRead) drawView(); return lastRead; }
+      });
 
       root.append(
         h('h2', null, '3단계 · 구경측광과 차등측광'),
@@ -237,7 +243,8 @@
         h('details', null, h('summary', null, '차등측광은 어떻게 되는 건가요?'),
           h('p', null, '어떤 밤 구름이 끼면 모든 별이 같은 정도로 어둡게 찍혀요. 그래서 (목표 별의 측정 등급) − (비교성의 측정 등급)을 구하면 구름의 영향이 서로 사라져요. 여기에 비교성의 ', h('b', null, '알려진 등급(카탈로그 등급)'), '을 더하면 목표 별의 등급 m이 나와요:'),
           h('div', { class: 'formula' }, 'm', h('sub', null, '목표'), ' = m', h('sub', null, '측정, 목표'), ' − 평균 [ m', h('sub', null, '측정, 비교성'), ' − m', h('sub', null, '카탈로그, 비교성'), ' ]'),
-          h('p', null, '비교성이 여러 개면 평균을 내서 측정 흔들림도 줄어요. 단, 비교성이 혼자 밝기가 변하는 별이면 오히려 결과가 엉망이 돼요.')));
+          h('p', null, '비교성이 여러 개면 평균을 내서 측정 흔들림도 줄어요. 단, 비교성이 혼자 밝기가 변하는 별이면 오히려 결과가 엉망이 돼요.')),
+        chal.zone);
 
       redraw();
     }

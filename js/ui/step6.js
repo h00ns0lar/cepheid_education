@@ -84,6 +84,7 @@
         r.list.forEach((x) => pl.text(x.logP, x.mu, x.id, { dx: 7, dy: -6, color: '#33456f', font: '11px sans-serif' }));
 
         if (S.revealed) drawReveal(r);
+        chal.refresh();
       }
 
       function drawReveal(r) {
@@ -117,11 +118,13 @@
             h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.save(); C.go(1); }, '도전') }, '🎲 다른 은하에 도전'))));
       }
 
+      const chal = C.chal6({ list: rows.map((r) => Object.assign({}, r, { M: rel.a * (r.logP - 1) + rel.b })), rel, gal, revealed: () => S.revealed });
+
       root.append(
         h('h2', null, '6단계 · 포그슨 방정식으로 거리 구하기'),
         h('p', { class: 'lead' }, '이제 마지막입니다. 주기로 구한 진짜 밝기(절대등급 M)와 하늘에서 보이는 밝기(겉보기등급 m)를 비교해, 은하까지의 거리를 계산해요.'),
         h('div', { class: 'panel' }, h('h3', null, '포그슨 방정식 계산기'), calcBox),
-        h('div', { style: { height: '16px' } }), box);
+        h('div', { style: { height: '16px' } }), box, chal.zone);
       drawCalc(); drawResult();
     }
   };
