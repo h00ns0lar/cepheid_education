@@ -122,7 +122,12 @@ label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 .timeline .night.pending { opacity: .85; background: #cbd9f4; }
 .bigcount { font-size: 2.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
 .thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
-.thumbs canvas { width: 66px; height: 66px; border-radius: 4px; border: 1px solid var(--line); image-rendering: pixelated; }
+.thumbs canvas { width: 72px; height: 72px; border-radius: 4px; border: 2px solid var(--line); image-rendering: pixelated; background: #000; display: block; }
+.tcell { cursor: pointer; }
+.tcell:hover canvas { border-color: var(--accent); }
+.tcell.cur canvas { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.tlabel { text-align: center; font-size: .75rem; color: var(--muted); }
+.tcell.cur .tlabel { color: var(--accent); font-weight: 700; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 

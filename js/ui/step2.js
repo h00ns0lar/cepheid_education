@@ -18,6 +18,23 @@
       const view = h('canvas', { class: 'view', style: { width: '100%', maxWidth: '360px', aspectRatio: '1' } });
       const caption = h('div', { class: 'muted', style: { marginTop: '6px', fontSize: '.85rem' } });
       const thumbs = h('div', { class: 'thumbs' });
+      let sel = first;
+      const cellEls = {}, cellCv = {};
+      // 변광성마다 시야가 다르므로, 고른 별 모두의 최신 사진을 한 줄로 보여 주고 눌러서 크게 본다
+      ids.forEach((id) => {
+        const cvT = document.createElement('canvas');
+        cvT.width = cvT.height = C.SIM.W;
+        const cell = h('div', {
+          class: 'tcell' + (id === sel ? ' cur' : ''), title: id + ' 크게 보기',
+          onclick: () => {
+            sel = id;
+            ids.forEach((k) => cellEls[k].classList.toggle('cur', k === id));
+            if (R.frames[id] && R.frames[id].length) showFrame(id, R.frames[id].length - 1);
+          }
+        }, cvT, h('div', { class: 'tlabel' }, id));
+        cellEls[id] = cell; cellCv[id] = cvT;
+        thumbs.appendChild(cell);
+      });
       const log = h('div', { class: 'muted', style: { fontSize: '.85rem', maxHeight: '110px', overflow: 'auto' } });
       const startBtn = h('button', { class: 'primary big' }, '🔭 촬영 시작');
       const stat = h('div');
@@ -44,7 +61,9 @@
         C.ensureFrames();
         let ep = 0;
         sched.nights.forEach((n, i) => paintCell(i, n.status, false));
-        showFrame(first, sched.epochs.length - 1);
+        const lastN = sched.epochs.length - 1;
+        ids.forEach((id) => C.drawFrame(cellCv[id], R.frames[id][lastN], C.SIM.W, C.SIM.H, 1));
+        showFrame(sel, lastN);
         summary();
         startBtn.disabled = true; startBtn.textContent = '✔ 촬영 완료';
         log.textContent = '이미 촬영을 마쳤어요. "다음"을 눌러 밝기 재기(측광)를 시작하세요.';
@@ -74,14 +93,11 @@
             const ep = sched.epochs[ei];
             const fr = C.renderEpoch(R.field, ep, ids);
             ids.forEach((id) => frames[id].push(fr[id]));
-            R.frames[first] = frames[first];
-            showFrame(first, ei);
-            const tc = document.createElement('canvas');
-            tc.title = 'Day ' + n.day;
-            C.drawFrame(tc, fr[first], R.field.vars[0].stamp.W, R.field.vars[0].stamp.H, 1);
-            tc.style.width = tc.style.height = '';
-            thumbs.appendChild(tc);
-            while (thumbs.children.length > 14) thumbs.removeChild(thumbs.firstChild);
+            ids.forEach((id) => {
+              R.frames[id] = frames[id];
+              C.drawFrame(cellCv[id], fr[id], C.SIM.W, C.SIM.H, 1);
+            });
+            showFrame(sel, ei);
             paintCell(d, 'ok', true);
             status.textContent = 'Day ' + n.day + ' · 10분 동안 촬영 · 사진 ' + ids.length + '장 저장';
             ei++;
@@ -115,7 +131,7 @@
           h('div', { class: 'panel' },
             h('h3', null, '방금 찍은 사진'),
             view, caption,
-            h('div', { style: { margin: '10px 0 4px' }, class: 'muted' }, '최근 사진들'),
+            h('div', { style: { margin: '10px 0 4px' }, class: 'muted' }, '변광성별 최신 사진 (눌러서 크게 보기)'),
             thumbs, h('div', { style: { marginTop: '8px' } }, log))),
         h('details', null, h('summary', null, '관측은 이렇게 이루어져요'),
           h('p', null, '가상의 큰 망원경에 V 필터(사람 눈에 가장 가까운 노란-초록빛만 통과시키는 필터)를 끼우고, 한 장에 10분(600초)씩 찍어요. 하늘 상태는 밤마다 달라서 어떤 밤은 구름이 끼고, 어떤 밤은 대기가 흔들려 별이 번져 보여요(시상). 망원경을 매일 쓸 수도 없어서 촬영 간격은 ', h('b', null, '불규칙'), '합니다. 그래서 4단계에서는 간격이 불규칙해도 쓸 수 있는 방법(Lomb–Scargle)을 써요.'),
