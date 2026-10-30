@@ -68,7 +68,7 @@
     sd = Math.sqrt(sd / img.length) || 1;
     const norm = Math.asinh(600);
     for (let i = 0; i < img.length; i++) {
-      const x = Math.max(0, (img[i] - med) / sd);
+      const x = Math.max(0, (img[i] - med) / sd + 1.2);
       const v = Math.min(1, Math.asinh(x / 3) / norm * 1.05);
       const k = i * 4, c = Math.round(255 * Math.pow(v, 0.85));
       id.data[k] = c; id.data[k + 1] = Math.min(255, c * 1.02); id.data[k + 2] = Math.min(255, c * 1.12 + 6); id.data[k + 3] = 255;

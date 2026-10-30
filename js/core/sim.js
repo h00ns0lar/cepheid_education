@@ -89,8 +89,8 @@
     pts.push([tx, ty]);
     stars.push({ role: 'target', x: tx, y: ty, mag: T, cat: null });
 
-    // 붐비는 시야에서도 비교성을 찾을 수 있게, 앞의 둘은 본성보다 확실히 밝게
-    for (let i = 0; i < 6; i++) add('good', i < 2 ? T + rand.range(-1.5, -0.6) : T + rand.range(-1.0, 1.0), 16, 14);
+    // 붐비는 시야에서도 비교성을 찾을 수 있게, 앞의 셋은 목표 별보다 확실히 밝게 (포화되지 않는 선까지)
+    for (let i = 0; i < 6; i++) add('good', i < 3 ? Math.max(19.4, T + rand.range(-2.0, -0.8)) : T + rand.range(-1.0, 1.0), 16, 14);
     add('sat', 16.6 + rand.range(-0.3, 0.3), 16, 14);
     for (let i = 0; i < 2; i++) add('faint', T + rand.range(2.6, 3.2), 14, 12);
     // 혼입(블렌드): 가까운 이웃이 같이 구경에 들어온다
@@ -170,6 +170,17 @@
     // 포화된 별은 세로로 빛이 번진다. 다른 별을 오염시키지 않을 때만.
     const satStar = stars.find((q) => q.role === 'sat');
     if (satStar) satStar.bleed = stars.concat(hidden).every((q) => q === satStar || Math.abs(q.x - satStar.x) >= 9 || Math.abs(q.y - satStar.y) >= 36);
+    // 광학계에 붙은 먼지: 별에서 떨어진 곳에 반투명한 도넛 모양 그림자 (프레임마다 같은 자리)
+    const dust = [];
+    for (let i = 0, n = 2 + Math.floor(rand() * 3); i < n; i++) {
+      for (let k = 0; k < 150; k++) {
+        const R = rand.range(5, 8.5), x = R + 3 + rand() * (W - 2 * R - 6), y = R + 3 + rand() * (H - 2 * R - 6);
+        if (stars.every((q) => Math.hypot(q.x - x, q.y - y) >= R + 8) && dust.every((d) => Math.hypot(d.x - x, d.y - y) >= d.R + R + 3)) {
+          dust.push({ x, y, R, w: rand.range(1.4, 2.2), depth: rand.range(0.45, 0.65) });
+          break;
+        }
+      }
+    }
     const hot = [];
     for (let i = 0, n = 4 + Math.floor(rand() * 5); i < n; i++) {
       const p = place(10, 4);
@@ -183,7 +194,7 @@
       else s.id = String.fromCharCode(65 + li++);
     });
     return {
-      W, H, stars, hidden, bg, haze, gals, lane, hot, feats,
+      W, H, stars, hidden, bg, haze, gals, lane, hot, dust, feats,
       glow: SIM.SKY0 * (0.03 + 0.18 * crowd) * rand.range(0.6, 1.2) * (1 + 0.8 * dist01),
       ell: rand.range(0, 0.14), eang: rand() * Math.PI, // 별 모양이 살짝 길쭉한 정도(추적 오차)
       grad: [rand.range(-0.12, 0.12), rand.range(-0.12, 0.12)]
@@ -337,6 +348,21 @@
     return d;
   }
 
+  // 먼지 도넛: 고리 부분이 가장 어둡고 안쪽은 조금 덜 어둡다 (1 = 그대로, 작을수록 어두움)
+  function buildDust(st) {
+    const W = st.W, H = st.H, t = new Float32Array(W * H).fill(1);
+    st.dust.forEach((d) => {
+      for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+        const r = Math.hypot(i - d.x, j - d.y);
+        if (r > d.R + 4 * d.w) continue;
+        const ring = Math.exp(-0.5 * Math.pow((r - d.R) / d.w, 2));
+        const fill = 0.3 / (1 + Math.exp((r - d.R) / 0.8));
+        t[j * W + i] *= 1 - d.depth * Math.min(1, ring + fill);
+      }
+    });
+    return t;
+  }
+
   // 밝은 별의 회절 가시(십자 모양 빛줄기)
   function addSpikes(img, W, H, x, y, flux, ang) {
     const f = 8e-5 * flux;
@@ -387,6 +413,8 @@
 
     if (!st.diffuse) st.diffuse = buildDiffuse(st);
     const dif = st.diffuse;
+    if (!st.dustT) st.dustT = buildDust(st);
+    const dT = st.dustT;
     const hotAt = {};
     st.hot.forEach((p) => { hotAt[p.y * W + p.x] = p.amp; });
 
@@ -394,24 +422,11 @@
     for (let j = 0; j < H; j++) {
       for (let i = 0; i < W; i++) {
         const k = j * W + i;
-        const sky = ep.sky * (1 + g0 * (i / W - 0.5) + g1 * (j / H - 0.5)) + dif[k] * tr + (hotAt[k] || 0);
+        const sky = (ep.sky * (1 + g0 * (i / W - 0.5) + g1 * (j / H - 0.5)) + dif[k] * tr) * dT[k] + (hotAt[k] || 0);
         const e = img[k] + sky;
         let val = e + Math.sqrt(e) * rand.gauss() + SIM.READ * rand.gauss();
         if (val > SIM.SAT) val = SIM.SAT;
         img[k] = val;
-      }
-    }
-    // 우주선(cosmic ray): 프레임마다 다른 곳에 찍히는 짧은 밝은 줄. 별에서 멀리 떨어진 곳에만 둔다.
-    for (let c = 0, nCr = Math.floor(rand() * 3.5); c < nCr; c++) {
-      for (let tries = 0; tries < 12; tries++) {
-        const x = 3 + rand() * (W - 6), y = 3 + rand() * (H - 6);
-        if (st.stars.some((q) => Math.hypot(q.x + ep.jx - x, q.y + ep.jy - y) < 14)) continue;
-        const a = rand() * 6.2832, len = 1 + rand() * 4, amp = 150 + rand() * 1500;
-        for (let k = 0; k <= len; k++) {
-          const i = Math.round(x + k * Math.cos(a)), j = Math.round(y + k * Math.sin(a));
-          if (i >= 0 && i < W && j >= 0 && j < H) img[j * W + i] = Math.min(SIM.SAT, img[j * W + i] + amp * (1 - 0.4 * k / len));
-        }
-        break;
       }
     }
     return img;
