@@ -73,7 +73,7 @@
             ctx.fillText(s.id, x + 13, y - 9);
           }
         });
-        info.textContent = 'Day ' + e.day + ' · 대기 흔들림(시상) ' + e.fwhm.toFixed(1) + ' 픽셀 · 하늘빛 ' + e.sky.toFixed(0) + ' 전자/픽셀 · 구름으로 어두워진 정도 ' + (e.transp > 0 ? '+' : '') + e.transp.toFixed(2) + ' 등급';
+        info.textContent = 'Day ' + e.day + ' · 대기 흔들림(시상) ' + e.fwhm.toFixed(1) + ' 픽셀 · 배경빛 ' + e.sky.toFixed(0) + ' 전자/픽셀 · 구름으로 어두워진 정도 ' + (e.transp > 0 ? '+' : '') + e.transp.toFixed(2) + ' 등급';
         // 이 사진에서의 구경측광 값
         const c = C.centroid(R.frames[cur][fi], st.W, st.H, st.stars[0].x + e.jx, st.stars[0].y + e.jy, 1.2 * e.fwhm);
         const a = C.aperture(R.frames[cur][fi], st.W, st.H, c.x, c.y, tap.rAp, tap.rIn, tap.rOut);
@@ -81,13 +81,13 @@
         readout.innerHTML = '';
         readout.append(h('table', null,
           h('tr', null, h('td', null, '원(구경) 안의 빛 전부'), h('td', { class: 'mono' }, (a.flux + a.sky * a.npix).toFixed(0))),
-          h('tr', null, h('td', null, '하늘빛 (픽셀당) × 픽셀 수'), h('td', { class: 'mono' }, a.sky.toFixed(1) + ' × ' + a.npix.toFixed(0))),
-          h('tr', null, h('td', null, h('b', null, '별의 빛 = 전부 − 하늘빛')), h('td', { class: 'mono' }, a.flux.toFixed(0) + ' 전자')),
+          h('tr', null, h('td', null, '배경빛 (픽셀당) × 픽셀 수'), h('td', { class: 'mono' }, a.sky.toFixed(1) + ' × ' + a.npix.toFixed(0))),
+          h('tr', null, h('td', null, h('b', null, '별의 빛 = 전부 − 배경빛')), h('td', { class: 'mono' }, a.flux.toFixed(0) + ' 전자')),
           h('tr', null, h('td', null, h('b', null, '측정 등급 (−2.5 log 빛의 양)')), h('td', { class: 'mono' }, (-2.5 * Math.log10(f)).toFixed(3)))));
       }
 
 
-      // ---------- + 도전: 구경과 하늘 고리를 직접 정해 보기 ----------
+      // ---------- + 도전: 구경과 배경 고리를 직접 정해 보기 ----------
       // 연습용이에요. 아래 그래프는 항상 자동 설정으로 계산하고, 여기서는 내가 정한 값이 적당한지 점검해 줘요.
       const man = { on: false, rAp: 2, rIn: 3, rOut: 5, showAuto: false };
       const sAp = h('input', { type: 'range', min: 0.8, max: 10, step: 0.1, value: man.rAp });
@@ -107,10 +107,10 @@
       }
       [[sAp, 'rAp'], [sIn, 'rIn'], [sOut, 'rOut']].forEach(([el, k]) => el.addEventListener('input', () => { man[k] = +el.value; drawView(); updateMan(); }));
       manBody.append(
-        h('p', { class: 'muted' }, '노란 원(구경)을 얼마나 크게 그릴지, 하늘 값을 잴 고리를 어디에 둘지 직접 정해 보세요. 사진 속 하늘색 원이 내가 정한 값이고, 아래에 적당한지 바로 점검해 줘요. 위의 날짜 슬라이더를 움직여 시상이 다른 날에도 확인해 보세요.'),
+        h('p', { class: 'muted' }, '노란 원(구경)을 얼마나 크게 그릴지, 배경 값을 잴 고리를 어디에 둘지 직접 정해 보세요. 사진 속 하늘색 원이 내가 정한 값이고, 아래에 적당한지 바로 점검해 줘요. 위의 날짜 슬라이더를 움직여 시상이 다른 날에도 확인해 보세요.'),
         gapRow('구경 반지름', lAp, sAp, '픽셀'),
-        gapRow('하늘 고리 안쪽', lIn, sIn, '픽셀'),
-        gapRow('하늘 고리 바깥쪽', lOut, sOut, '픽셀'),
+        gapRow('배경 고리 안쪽', lIn, sIn, '픽셀'),
+        gapRow('배경 고리 바깥쪽', lOut, sOut, '픽셀'),
         h('div', { class: 'row', style: { margin: '6px 0' } },
           h('button', { class: 'sm', onclick: () => { const a = C.autoAperture(eps[fi].fwhm); setMan(+a.rAp.toFixed(1), +a.rIn.toFixed(1), +a.rOut.toFixed(1)); } }, '자동 값으로 맞추기'),
           h('label', { class: 'chk' }, showAutoChk, h('span', { class: 'muted' }, '자동 설정 원 겹쳐 보기'))),
@@ -121,7 +121,7 @@
 
       function updateMan() {
         const e = eps[fi], auto = C.autoAperture(e.fwhm);
-        autoLine.textContent = '자동 설정: 구경 반지름 ' + auto.rAp.toFixed(1) + ' 픽셀(시상의 1.6배), 하늘 고리 ' + auto.rIn.toFixed(1) + ' ~ ' + auto.rOut.toFixed(1) + ' 픽셀. 컴퓨터는 매일의 시상에 맞춰 이 값을 정해요.';
+        autoLine.textContent = '자동 설정: 구경 반지름 ' + auto.rAp.toFixed(1) + ' 픽셀(시상의 1.6배), 배경 고리 ' + auto.rIn.toFixed(1) + ' ~ ' + auto.rOut.toFixed(1) + ' 픽셀. 컴퓨터는 매일의 시상에 맞춰 이 값을 정해요.';
         lAp.textContent = man.rAp.toFixed(1); lIn.textContent = man.rIn.toFixed(1); lOut.textContent = man.rOut.toFixed(1);
         manChecks.innerHTML = '';
         if (!man.on) return;
@@ -130,7 +130,7 @@
         const rows = [];
         const add = (kind, title, text) => rows.push({ kind, title, text });
         if (man.rOut - man.rIn < 1) {
-          manChecks.append(h('div', { class: 'callout bad' }, '하늘 고리의 바깥쪽 반지름이 안쪽보다 1픽셀 이상 커야 해요.'));
+          manChecks.append(h('div', { class: 'callout bad' }, '배경 고리의 바깥쪽 반지름이 안쪽보다 1픽셀 이상 커야 해요.'));
           return;
         }
         const aS = C.aperture(img, st.W, st.H, c.x, c.y, man.rAp, man.rIn, man.rOut);
@@ -143,7 +143,7 @@
         const ratio = man.rAp / e.fwhm;
         if (enc < 0.8) add('bad', '구경이 너무 작아요', '별빛의 ' + (enc * 100).toFixed(0) + '%만 담겨요. 나머지는 원 밖으로 새고, 시상이 바뀌면 새는 양도 바뀌어서 밝기가 들쭉날쭉해져요.');
         else if (enc < 0.9) add('warn', '구경이 조금 작아요', '별빛의 ' + (enc * 100).toFixed(0) + '%를 담아요. 90% 이상이면 더 안정적이에요.');
-        else if (ratio > 2.8) add('warn', '구경이 너무 커요', '별빛은 ' + (enc * 100).toFixed(0) + '% 담지만 하늘 잡음까지 많이 들어와요 (시상의 ' + ratio.toFixed(1) + '배).');
+        else if (ratio > 2.8) add('warn', '구경이 너무 커요', '별빛은 ' + (enc * 100).toFixed(0) + '% 담지만 배경 잡음까지 많이 들어와요 (시상의 ' + ratio.toFixed(1) + '배).');
         else add('ok', '구경 크기가 알맞아요', '별빛의 ' + (enc * 100).toFixed(0) + '%를 담아요 (시상의 ' + ratio.toFixed(1) + '배).');
 
         // 2) S/N: 자동 설정과 비교
@@ -152,18 +152,18 @@
         else if (sr >= 0.85) add('warn', 'S/N이 조금 낮아요', '내 설정의 S/N ' + snrS.toFixed(0) + ' (자동 설정 ' + snrA.toFixed(0) + '의 ' + (sr * 100).toFixed(0) + '%).');
         else add('bad', 'S/N이 많이 낮아요', '내 설정의 S/N ' + snrS.toFixed(0) + ' (자동 설정 ' + snrA.toFixed(0) + '의 ' + (sr * 100).toFixed(0) + '%). 측정 오차가 그만큼 커져요.');
 
-        // 3) 하늘 고리가 별빛을 먹거나 멀리 떨어졌는가: 깨끗한 참고 고리와 비교
+        // 3) 배경 고리가 별빛을 먹거나 멀리 떨어졌는가: 깨끗한 참고 고리와 비교
         const gap = man.rIn - man.rAp;
         const bias = (aS.flux - aRef.flux) / aRef.flux * 100;
-        if (Math.abs(bias) > 2) add('bad', '하늘 고리 위치가 별에 너무 가까워요 (또는 먼 별이 섞여요)', '고리를 깨끗한 곳에 두었을 때보다 별빛이 ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + '% 달라져요. ' + (gap < 1 ? '별 가장자리의 빛이 하늘로 계산되는 중이에요. 구경보다 1.5픽셀쯤은 바깥에 두세요.' : '고리 안에 다른 별이 걸렸는지 확인하세요.'));
-        else if (gap < 1) add('warn', '고리가 구경에 너무 붙어 있어요', '별의 퍼진 가장자리 빛이 하늘로 계산될 수 있어요. 구경보다 1.5픽셀쯤 바깥이 좋아요.');
+        if (Math.abs(bias) > 2) add('bad', '배경 고리 위치가 별에 너무 가까워요 (또는 먼 별이 섞여요)', '고리를 깨끗한 곳에 두었을 때보다 별빛이 ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + '% 달라져요. ' + (gap < 1 ? '별 가장자리의 빛이 배경으로 계산되는 중이에요. 구경보다 1.5픽셀쯤은 바깥에 두세요.' : '고리 안에 다른 별이 걸렸는지 확인하세요.'));
+        else if (gap < 1) add('warn', '고리가 구경에 너무 붙어 있어요', '별의 퍼진 가장자리 빛이 배경으로 계산될 수 있어요. 구경보다 1.5픽셀쯤 바깥이 좋아요.');
         else if (gap > 8) add('warn', '고리가 별에서 너무 멀어요', '멀리 있는 다른 별이나 얼룩이 섞이기 쉬워요.');
-        else add('ok', '하늘 고리 위치가 알맞아요', '별빛이 ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + '%밖에 안 달라지는 깨끗한 위치예요.');
+        else add('ok', '배경 고리 위치가 알맞아요', '별빛이 ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + '%밖에 안 달라지는 깨끗한 위치예요.');
 
-        // 4) 하늘 고리 픽셀 수
-        if (aS.nsky >= 80) add('ok', '하늘 고리의 픽셀이 충분해요', aS.nsky + '개의 픽셀로 하늘 값을 안정적으로 재요.');
-        else if (aS.nsky >= 40) add('warn', '하늘 고리가 조금 좁아요', aS.nsky + '개뿐이에요. 고리를 두껍게 하면 하늘 값이 더 안정돼요.');
-        else add('bad', '하늘 고리가 너무 좁아요', aS.nsky + '개뿐이라 하늘 값이 들쭉날쭉해요.');
+        // 4) 배경 고리 픽셀 수
+        if (aS.nsky >= 80) add('ok', '배경 고리의 픽셀이 충분해요', aS.nsky + '개의 픽셀로 배경 값을 안정적으로 재요.');
+        else if (aS.nsky >= 40) add('warn', '배경 고리가 조금 좁아요', aS.nsky + '개뿐이에요. 고리를 두껍게 하면 배경 값이 더 안정돼요.');
+        else add('bad', '배경 고리가 너무 좁아요', aS.nsky + '개뿐이라 배경 값이 들쭉날쭉해요.');
 
         // 5) 이웃 별이 구경이나 고리에 걸렸는가
         const nb = st.stars.filter((s) => s.role !== 'target').map((s) => ({ id: s.id, x: s.x, y: s.y, mag: s.mag }))
@@ -174,8 +174,8 @@
         const inAp = bright.filter((s) => dist(s) < man.rAp + 1.5).map((s) => s.id);
         const inRing = bright.filter((s) => dist(s) > man.rIn - 1.5 && dist(s) < man.rOut + 1.5).map((s) => s.id);
         if (inAp.length) add('bad', '이웃 별이 구경 안에 들어왔어요', inAp.join(', ') + ' 의 빛이 섞여요. 구경을 줄이거나 다른 날을 골라 보세요.');
-        else if (inRing.length) add('bad', '이웃 별이 하늘 고리에 걸렸어요', inRing.join(', ') + ' 의 빛이 하늘 값을 높여서 별빛을 실제보다 어둡게 만들어요. 고리 크기를 바꿔 피해 보세요.');
-        else add('ok', '이웃 별이 걸리지 않았어요', '구경과 하늘 고리 안에 다른 밝은 별이 없어요.');
+        else if (inRing.length) add('bad', '이웃 별이 배경 고리에 걸렸어요', inRing.join(', ') + ' 의 빛이 배경 값을 높여서 별빛을 실제보다 어둡게 만들어요. 고리 크기를 바꿔 피해 보세요.');
+        else add('ok', '이웃 별이 걸리지 않았어요', '구경과 배경 고리 안에 다른 밝은 별이 없어요.');
 
         const okN = rows.filter((r) => r.kind === 'ok').length;
         manChecks.append(
@@ -324,7 +324,7 @@
           h('div', null,
             h('div', { class: 'panel' },
               h('h3', null, '① 구경측광: 별 둘레에 원을 그려 빛 모으기'),
-              h('p', { class: 'muted' }, '노란 원(구경) 안의 빛을 모두 더하고, 점선 고리 안에서 잰 하늘빛을 원 안의 픽셀 수만큼 빼요. 원 크기는 그날 별이 퍼진 정도(시상)에 맞춰 자동으로 정해져요.'),
+              h('p', { class: 'muted' }, '노란 원(구경) 안의 빛을 모두 더하고, 점선 고리(배경 고리) 안에서 잰 배경빛(별이 없는 하늘 자체의 빛)을 원 안의 픽셀 수만큼 빼요. 원 크기는 그날 별이 퍼진 정도(시상)에 맞춰 자동으로 정해져요.'),
               view,
               h('div', { class: 'row', style: { marginTop: '8px' } }, playBtn, slider),
               info, hoverLine, h('div', { style: { marginTop: '8px' } }, readout),
