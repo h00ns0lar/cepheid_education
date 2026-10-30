@@ -1,4 +1,4 @@
-// 1단계: 은하 뽑기(룰렛) → 은하 그림 위의 변광성 하이라이트 → 관측 대상 선택
+// 1단계: 은하 뽑기 → 은하 그림 위의 변광성 하이라이트 → 관측 대상 선택
 (function (g) {
   const C = g.CEPH;
   const h = C.h;
@@ -178,56 +178,39 @@
     }
   };
 
+  // 뽑기 전 화면: 어떤 은하인지 알 수 없는 밤하늘
+  function mystery(cv) {
+    const ctx = cv.getContext('2d');
+    const rand = C.rng(C.hashStr('mystery'));
+    const bg = ctx.createRadialGradient(CW / 2, CH / 2, 40, CW / 2, CH / 2, CW * 0.62);
+    bg.addColorStop(0, '#101a45'); bg.addColorStop(1, '#03050f');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
+    for (let i = 0; i < 160; i++) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.15 + 0.6 * rand()) + ')';
+      ctx.beginPath(); ctx.arc(rand() * CW, rand() * CH, 0.5 + 1.2 * rand(), 0, 6.2832); ctx.fill();
+    }
+  }
+
   function renderRoulette(root) {
     const cv = h('canvas', { id: 'sil', width: CW, height: CH });
-    const msg = h('div', null,
-      h('div', { class: 'lead' }, '오늘 탐사할 은하를 뽑아 봅시다.'),
-      h('small', null, '룰렛이 멈춘 은하가 오늘의 무대예요. 그 은하까지의 거리는 마지막에 공개됩니다.'));
     const btn = h('button', { class: 'primary big' }, '🎲 은하 뽑기');
-    const mask = h('div', { class: 'roulette-mask' }, h('div', null, msg, h('div', { style: { marginTop: '14px' } }, btn)));
-    const chips = h('div', { class: 'chips', style: { marginTop: '10px', justifyContent: 'center' } },
-      C.GALAXIES.map((gl) => h('div', { class: 'chip' }, gl.name)));
-    function mark(idx) { [].forEach.call(chips.children, (c, k) => c.classList.toggle('cur', k === idx)); }
+    const mask = h('div', { class: 'roulette-mask' }, h('div', null,
+      h('div', { class: 'lead', style: { color: '#e8ebf7' } }, '오늘 탐사할 은하를 뽑아 봅시다.'),
+      h('small', null, '버튼을 누르면 은하가 하나 정해져요. 그 은하까지의 거리는 마지막에 공개됩니다.'),
+      h('div', { style: { marginTop: '14px' } }, btn)));
     root.append(
       h('h2', null, '1단계 · 변광성 찾기'),
       h('p', { class: 'lead' }, '세페이드 변광성은 밝기가 규칙적으로 변하는 별이에요. 은하 속에서 변광성을 찾아 그 밝기 변화를 재면, 그 은하까지의 거리를 알 수 있습니다.'),
-      h('div', { class: 'sil-wrap' }, cv, mask), chips);
-    const ctx = cv.getContext('2d');
-    ctx.drawImage(illustration(C.GALAXIES[0], 0), 0, 0);
-    // 나머지 은하 그림은 미리 그려 두어 룰렛이 끊기지 않게 한다
-    C.GALAXIES.slice(1).forEach((gl, k) => setTimeout(() => illustration(gl, 0), 60 * (k + 1)));
+      h('div', { class: 'sil-wrap' }, cv, mask));
+    mystery(cv);
 
     btn.onclick = () => {
-      btn.disabled = true;
-      mask.style.background = 'transparent';
-      mask.innerHTML = '';
-      const n = C.GALAXIES.length;
-      const finalIdx = Math.floor(Math.random() * n);
-      let i = Math.floor(Math.random() * n), delay = 70, elapsed = 0, stopped = false;
-      C.onLeave(() => { stopped = true; });
-      (function tick() {
-        if (stopped) return;
-        elapsed += delay;
-        const idx = i % n;
-        const done = elapsed > 2300 && idx === finalIdx;
-        ctx.drawImage(illustration(C.GALAXIES[idx], 0), 0, 0);
-        mark(idx);
-        if (done) {
-          ctx.fillStyle = '#ffcb47'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText('오늘의 은하는 ' + C.GALAXIES[idx].short + '!', CW / 2, 44);
-          setTimeout(() => {
-            if (stopped) return;
-            resetDownstream();
-            C.S.galaxyId = C.GALAXIES[finalIdx].id;
-            C.S.seed = 1 + Math.floor(Math.random() * 900000);
-            C.save();
-            C.go(1);
-          }, 1100);
-          return;
-        }
-        i++; delay *= 1.1;
-        setTimeout(tick, delay);
-      })();
+      const pick = C.GALAXIES[Math.floor(Math.random() * C.GALAXIES.length)];
+      resetDownstream();
+      C.S.galaxyId = pick.id;
+      C.S.seed = 1 + Math.floor(Math.random() * 900000);
+      C.save();
+      C.go(1);
     };
   }
 

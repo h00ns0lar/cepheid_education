@@ -112,26 +112,7 @@
         ] }));
     });
 
-    // ③ 모양 판정
-    const d3 = C.chal('③ 세페이드인지 식쌍성인지: 모양 판정을 직접 계산하기', function (body) {
-      const { fit, at } = curve();
-      const amp = fit.amp;
-      let xf = 0, best = -1e9;
-      for (let i = 0; i < 400; i++) { const v = at(i / 400); if (v > best) { best = v; xf = i / 400; } }
-      const mL = at(xf - 0.15), mR = at(xf + 0.15), asym = Math.abs(mR - mL) / amp, sug = C.suggestType(fit);
-      const rows = [
-        { label: '가장 어두운 때의 위상 (③ 그래프에서 곡선이 가장 아래인 곳, 0~1)', ans: xf, tol: 0.06, circ: true, hint: '곡선의 가장 아래 지점의 가로축 값을 읽어 보세요', show: fx(xf) },
-        { label: '그 위상보다 0.15 앞(−0.15)에서의 등급', ans: mL, tol: 0.1, circ: false, hint: '가로축에서 0.15 왼쪽의 곡선 높이를 읽어 보세요', show: fx(mL) },
-        { label: '그 위상보다 0.15 뒤(+0.15)에서의 등급', ans: mR, tol: 0.1, hint: '가로축에서 0.15 오른쪽의 곡선 높이를 읽어 보세요', show: fx(mR) },
-        { label: '비대칭 = |뒤 − 앞| ÷ 진폭', ans: asym, tol: 0.1, hint: '두 등급의 차이를 진폭(' + fx(amp) + ')으로 나눠요', show: fx(asym) + '  (진폭 ' + fx(amp) + ')' },
-        { label: '판정', options: [['cepheid', '세페이드 (비대칭이 커요)'], ['eb', '식쌍성 (좌우가 대칭이에요)']], ans: sug, hint: '비대칭이 0.1보다 큰지 작은지 보세요', show: sug === 'cepheid' ? '세페이드' : '식쌍성' }
-      ];
-      body.append(
-        h('p', null, '컴퓨터는 가장 어두운 때를 기준으로 곡선의 왼쪽과 오른쪽이 얼마나 다른지(비대칭)를 계산해서 별의 종류를 가려냈어요. 세페이드는 비대칭이 크고(톱니), 식쌍성은 거의 0이에요(좌우 대칭). 컴퓨터는 모든 위치를 평균 내지만, 여기서는 한 쌍(±0.15)만 비교해 볼게요. 별 ', h('b', null, ctx.id()), ' 기준이에요.'),
-        C.quiz(rows, { solution: [h('p', null, '비대칭 값이 0.1 정도보다 크면 세페이드, 작으면 식쌍성이라고 컴퓨터는 판정해요. 지금 곡선의 컴퓨터 판정은 "' + (sug === 'cepheid' ? '세페이드' : '식쌍성') + '"예요. (한 쌍만 비교해서 경계에서는 컴퓨터와 다를 수 있어요.)')] }));
-    });
-
-    return { zone: C.chalZone([d1, d2, d3]), reset: () => { [d1, d2, d3].forEach((d) => d.refresh()); } };
+    return { zone: C.chalZone([d1, d2]), reset: () => { [d1, d2].forEach((d) => d.refresh()); } };
   };
 
   // ---------------------------------------------------------------- 5단계
