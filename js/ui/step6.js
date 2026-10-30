@@ -7,7 +7,7 @@
     render(root) {
       const S = C.S, R = C.world(), gal = R.field.galaxy;
       const rows = C.cepheidRows().filter((r) => r.incl);
-      const rel = C.calibRelation();
+      const rel = C.litRelation();
       if (rows.length < 3) {
         root.append(h('h2', null, '6단계 · 거리 계산'), h('div', { class: 'callout bad' }, '사용할 세페이드가 3개 미만이에요. 5단계에서 확인해 주세요.'));
         return;

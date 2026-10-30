@@ -135,25 +135,36 @@
   };
 
   // ---------------------------------------------------------------- 5단계
-  // ctx: rows() → 쓰는 세페이드들, calibDone() → 보정 관계를 만들었는지
+  // 위쪽에서는 문헌의 식을 그대로 쓰고, 여기서는 그 식이 어떻게 만들어졌는지 직접 해 본다.
+  // ctx: rows() → 쓰는 세페이드들
   C.chal5 = function (ctx) {
-    // ① 시차 → 거리 → 절대등급
-    const d1 = C.chal('① 시차에서 절대등급까지 직접 계산하기: 눈금을 만든 방법', function build(body) {
-      const cr = C.calibRows(), r = pick(cr, 1)[0];
-      const rows = [
-        { label: '거리 d = 1000 ÷ 시차 p', unit: 'pc', ans: r.d, tolRel: 0.01, hint: '시차 ' + r.parallax + '로 1000을 나눠요', show: fx(r.d, 0) + ' pc  (1000 ÷ ' + r.parallax + ')' },
-        { label: '절대등급 M = m − 5 log₁₀(d ÷ 10)', ans: r.M, tol: 0.05, hint: '5 × log₁₀(d÷10) 를 m에서 빼요', show: fx(r.M) + '  (' + fx(r.mV) + ' − 5 × log₁₀(' + fx(r.d, 0) + ' ÷ 10))' }
-      ];
+    const lit = C.litRelation();
+    const kpi = (items) => h('div', { class: 'kpi' }, items.map(([v, l]) => h('div', null, h('div', { class: 'v' }, v), h('div', { class: 'l' }, l))));
+
+    // ① 이 은하의 세페이드로 직선 구하기 (리비트의 발견 따라 하기)
+    const d1 = C.chal('① 이 은하의 세페이드로 주기-밝기 직선 그려 보기: 리비트의 발견 따라 하기', function (body) {
+      const use = ctx.rows();
+      if (use.length < 3) { body.append(note('warn', '쓸 수 있는 세페이드가 3개 미만이에요.')); return; }
+      const xs = use.map((r) => r.logP), ys = use.map((r) => r.m);
+      const lr = C.linreg(xs, ys);
+      const cv = h('canvas', { class: 'plot tall' });
       body.append(
-        h('p', null, '위 ②에서 컴퓨터는 거리를 아는 세페이드의 시차로 절대등급을 구했어요. 별 하나를 직접 계산해 보세요.'),
-        h('div', { class: 'kpi' },
-          h('div', null, h('div', { class: 'v' }, r.name), h('div', { class: 'l' }, '주기 ' + fx(r.P, 1) + '일')),
-          h('div', null, h('div', { class: 'v' }, fx(r.parallax, 3)), h('div', { class: 'l' }, '시차 p (밀리각초)')),
-          h('div', null, h('div', { class: 'v' }, fx(r.mV)), h('div', { class: 'l' }, '겉보기등급 m'))),
-        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
+        h('p', null, '위에서는 문헌의 식을 그대로 썼어요. 그런데 이 은하의 세페이드만 봐도 "주기가 길수록 더 밝다"는 관계가 보일까요? 같은 은하의 별은 거의 같은 거리에 있으니, 겉보기등급 ⟨m⟩을 주기(log P)에 맞춰 그리면 돼요.'),
+        cv);
+      const plot = new C.Plot(cv, { xlabel: 'log P (P: 일)', ylabel: '겉보기등급 ⟨m⟩', invertY: true });
+      const yr = C.padRange(ys, 0.15);
+      plot.begin(0.3, 1.7, yr[0], yr[1]);
+      plot.line([0.3, 1.7], [lr.intercept + lr.slope * 0.3, lr.intercept + lr.slope * 1.7], { color: '#e8890c', dash: [6, 4] });
+      plot.scatter(xs, ys, { color: '#12a36a', r: 4.5 });
+      use.forEach((r) => plot.text(r.logP, r.m, r.id, { dx: 7, dy: -6, color: '#33456f', font: '11px sans-serif' }));
+      const close = Math.abs(lr.slope - lit.a) < 0.7;
+      body.append(
+        kpi([[fx(lr.slope) + ' ± ' + fx(lr.sigSlope), '이 은하에서 구한 기울기 (log P가 1 늘 때 등급 변화)'], [fx(lr.rms), '직선에서 흩어진 정도 (등급)'], [String(use.length), '쓰는 세페이드 수']]),
+        note(close ? 'good' : 'warn', '문헌 식의 기울기는 ' + fx(lit.a) + ' 이에요. ' + (close ? '거의 같네요! 주기-광도 관계는 어느 은하에서나 똑같이 통하는 법칙이에요.' : '꽤 달라요. 분류나 주기가 잘못된 별이 없는지 확인해 보세요.')),
+        h('p', { class: 'muted' }, '점들의 높이(⟨m⟩)는 은하까지의 거리에 따라 위아래로 옮겨져요. 그래서 이 그림만으로는 "진짜 밝기"를 알 수 없고, 기울기만 알 수 있어요. 진짜 밝기의 기준값은 ③에서 만들어 봐요.'));
     });
 
-    // ② 최소제곱 직선
+    // ② 최소제곱 손계산
     const d2 = C.chal('② 직선의 기울기 직접 구하기: 컴퓨터가 맞춘 직선을 손으로 계산해 보기', function (body) {
       const rows0 = ctx.rows().slice(0, 4);
       if (rows0.length < 3) { body.append(note('warn', '쓸 수 있는 세페이드가 3개 미만이에요.')); return; }
@@ -168,31 +179,68 @@
         { label: 'log P = 1 일 때 직선이 지나는 m = ȳ + a(1 − x̄)', ans: at1, tol: 0.08, hint: 'ȳ에 a × (1 − x̄)를 더해요', show: fx(at1) }
       ];
       body.append(
-        h('p', null, '위 ①에서 컴퓨터는 점들에 가장 잘 맞는 직선을 구했어요(최소제곱법). 쓰는 세페이드 중 앞의 ' + n + '개로 같은 계산을 직접 해 보세요.'),
+        h('p', null, '①에서 컴퓨터는 점들에 가장 잘 맞는 직선을 구했어요(최소제곱법). 쓰는 세페이드 중 앞의 ' + n + '개로 같은 계산을 직접 해 보세요.'),
         h('table', { style: { maxWidth: '340px' } }, h('tr', null, h('th', null, '별'), h('th', null, 'x = log P'), h('th', null, 'y = m')),
           rows0.map((r) => h('tr', null, h('td', null, r.id), h('td', { class: 'mono' }, fx(r.logP, 3)), h('td', { class: 'mono' }, fx(r.m))))),
-        C.quiz(rows, { solution: [h('p', null, '기울기는 "log P가 1 늘 때 겉보기등급이 얼마나 변하는가"예요. 음수라는 건 주기가 길수록 숫자가 작다, 즉 더 밝다는 뜻이에요. 위 ①에서 컴퓨터가 모든 별로 구한 기울기와도 비슷한지 비교해 보세요.')] }));
+        C.quiz(rows, { solution: [h('p', null, '기울기는 "log P가 1 늘 때 겉보기등급이 얼마나 변하는가"예요. 음수라는 건 주기가 길수록 숫자가 작다, 즉 더 밝다는 뜻이에요.')] }));
     });
 
-    // ③ 광도 계산
-    const d3 = C.chal('③ 주기에서 광도까지 직접 계산하기: 관계식을 적용한 방법', function build(body) {
-      if (!ctx.calibDone()) { body.append(note('warn', '위 ②에서 "시차 → 거리 → 절대등급 계산하기" 버튼을 먼저 눌러 주세요. 그러면 계산에 쓸 주기-광도 관계가 만들어져요.')); return; }
+    // ③ 거리를 아는 세페이드로 관계식 만들기
+    const d3 = C.chal('③ 문헌의 식은 어떻게 만들었을까? 거리를 아는 세페이드로 직접 만들어 보기', function build(body) {
+      const cr = C.calibRows(), r = pick(cr, 1)[0];
+      const rows = [
+        { label: '거리 d = 1000 ÷ 시차 p', unit: 'pc', ans: r.d, tolRel: 0.01, hint: '시차 ' + r.parallax + '로 1000을 나눠요', show: fx(r.d, 0) + ' pc  (1000 ÷ ' + r.parallax + ')' },
+        { label: '절대등급 M = m − 5 log₁₀(d ÷ 10)', ans: r.M, tol: 0.05, hint: '5 × log₁₀(d÷10) 를 m에서 빼요', show: fx(r.M) + '  (' + fx(r.mV) + ' − 5 × log₁₀(' + fx(r.d, 0) + ' ÷ 10))' }
+      ];
+      const out = h('div');
+      body.append(
+        h('p', null, '위에서 쓴 식은 가까운 세페이드들로 만들어졌어요. 이 별들은 가까워서 ', h('b', null, '시차'), '(지구가 태양 둘레를 돌며 생기는 별 위치의 작은 어긋남)로 거리를 정확히 알 수 있고, 거리를 알면 진짜 밝기(절대등급)를 계산할 수 있어요. 별 하나를 직접 계산해 보세요.'),
+        h('div', { class: 'callout' }, '※ 아래 별들(MW-1~7)은 실제 별이 아니라, 교육용으로 위 식에 약간의 흩어짐을 더해 만든 가상의 세페이드예요.'),
+        h('div', { class: 'kpi' },
+          h('div', null, h('div', { class: 'v' }, r.name), h('div', { class: 'l' }, '주기 ' + fx(r.P, 1) + '일')),
+          h('div', null, h('div', { class: 'v' }, fx(r.parallax, 3)), h('div', { class: 'l' }, '시차 p (밀리각초)')),
+          h('div', null, h('div', { class: 'v' }, fx(r.mV)), h('div', { class: 'l' }, '겉보기등급 m'))),
+        C.quiz(rows, { extra: [
+          h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로'),
+          h('button', { onclick: () => {
+            out.innerHTML = '';
+            const rel = C.calibRelation(), cvA = h('canvas', { class: 'plot tall' });
+            out.append(
+              h('h4', { style: { margin: '14px 0 6px' } }, '7개 별을 모두 계산하고 그래프로 그리면'),
+              h('table', null,
+                h('tr', null, h('th', null, '별'), h('th', null, 'P (일)'), h('th', null, '시차 p (밀리각초)'), h('th', null, '거리 d = 1000/p (pc)'), h('th', null, '겉보기 m_V'), h('th', null, 'M = m − 5 log(d/10)')),
+                cr.map((c) => h('tr', null, h('td', null, c.name), h('td', { class: 'mono' }, fx(c.P, 1)), h('td', { class: 'mono' }, fx(c.parallax, 3)), h('td', { class: 'mono' }, fx(c.d, 0)), h('td', { class: 'mono' }, fx(c.mV)), h('td', { class: 'mono' }, fx(c.M))))),
+              cvA);
+            const pl = new C.Plot(cvA, { xlabel: 'log P', ylabel: '절대등급 M_V', invertY: true });
+            pl.begin(0.3, 1.7, -7.2, -2);
+            pl.line([0.3, 1.7], [rel.a * (0.3 - 1) + rel.b, rel.a * (1.7 - 1) + rel.b], { color: '#e8890c', w: 2 });
+            pl.scatter(cr.map((c) => c.logP), cr.map((c) => c.M), { color: '#d6469a', r: 4.5 });
+            out.append(
+              h('div', { class: 'formula' }, '내가 만든 식: M', h('sub', null, 'V'), ' = ', h('span', { class: 'hl' }, fx(rel.a)), ' (log P − 1) ', rel.b < 0 ? '− ' : '+ ', h('span', { class: 'hl' }, fx(Math.abs(rel.b)))),
+              note('good', '문헌의 식(' + fx(lit.a) + ', ' + fx(lit.b) + ')과 거의 같아요! 거리를 아는 세페이드들로 이렇게 기준값을 만들고, 그 식을 먼 은하의 세페이드에 적용하는 거예요. 별이 많을수록 식이 더 믿을 만해져요.'));
+          } }, '7개 전체 결과와 그래프 보기')
+        ] }),
+        out);
+    });
+
+    // ④ 광도 손계산
+    const d4 = C.chal('④ 주기에서 광도까지 직접 계산하기: 식을 적용한 방법', function build(body) {
       const use = ctx.rows();
       if (!use.length) { body.append(note('warn', '쓸 수 있는 세페이드가 없어요.')); return; }
-      const r = pick(use, 1)[0], rel = C.calibRelation();
-      const lp = Math.log10(r.P), M = rel.a * (lp - 1) + rel.b, L = C.lumSun(M);
+      const r = pick(use, 1)[0];
+      const lp = Math.log10(r.P), M = lit.a * (lp - 1) + lit.b, L = C.lumSun(M);
       const rows = [
         { label: 'log P = log₁₀(P)', ans: lp, tol: 0.004, hint: '계산기의 log 키로 ' + fx(r.P) + '의 상용로그를 구해요', show: fx(lp, 3) },
-        { label: '절대등급 M = a(log P − 1) + b', ans: M, tol: 0.03, hint: 'a와 b는 위 관계식의 값을 쓰세요', show: fx(M) + '  (' + fx(rel.a) + ' × (' + fx(lp, 3) + ' − 1) + (' + fx(rel.b) + '))' },
+        { label: '절대등급 M = a(log P − 1) + b', ans: M, tol: 0.03, hint: 'a와 b는 위 식의 값을 쓰세요', show: fx(M) + '  (' + fx(lit.a) + ' × (' + fx(lp, 3) + ' − 1) + (' + fx(lit.b) + '))' },
         { label: '광도 L = 10^(0.4 × (4.83 − M))', unit: '태양의 몇 배', ans: L, tolRel: 0.04, hint: '4.83 − M 에 0.4를 곱해서 10의 거듭제곱을 해요', show: Math.round(L).toLocaleString('ko-KR') + ' 배' }
       ];
       body.append(
-        h('p', null, '위 ③에서 컴퓨터는 주기만으로 각 세페이드의 진짜 밝기를 구했어요. 별 ', h('b', null, r.id), '(주기 ', h('b', null, fx(r.P) + '일'), ')를 직접 계산해 보세요.'),
-        h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '관계식: M = ', h('span', { class: 'hl' }, fx(rel.a)), ' × (log P − 1) + (', h('span', { class: 'hl' }, fx(rel.b)), ')', h('br'), h('small', { class: 'muted' }, '태양의 절대등급은 4.83이에요.')),
+        h('p', null, '위 ②에서 컴퓨터는 주기만으로 각 세페이드의 진짜 밝기를 구했어요. 별 ', h('b', null, r.id), '(주기 ', h('b', null, fx(r.P) + '일'), ')를 직접 계산해 보세요.'),
+        h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '식: M = ', h('span', { class: 'hl' }, fx(lit.a)), ' × (log P − 1) + (', h('span', { class: 'hl' }, fx(lit.b)), ')', h('br'), h('small', { class: 'muted' }, '태양의 절대등급은 4.83이에요.')),
         C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
     });
 
-    return { zone: C.chalZone([d1, d2, d3]), refresh: () => { d2.refresh(); d3.refresh(); } };
+    return { zone: C.chalZone([d1, d2, d3, d4]), refresh: () => { d1.refresh(); d2.refresh(); d4.refresh(); } };
   };
 
   // ---------------------------------------------------------------- 6단계
