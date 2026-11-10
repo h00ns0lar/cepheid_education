@@ -338,7 +338,7 @@
             h('div', { class: 'panel', style: { marginTop: '16px' } },
               h('h3', null, '③ 차등측광: 비교성과의 차이로 날씨 영향 없애기'),
               h('div', { class: 'muted', style: { margin: '2px 0' } }, '그대로 잰 값: 밤마다 들쭉날쭉 (구름과 대기 흔들림 때문)'), cvRaw,
-              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '비교성들의 밝기 변화 (곧 날씨의 영향)'), cvRes,
+              h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '비교성들의 밝기 변화 (날씨 영향에 따른 변화)'), cvRes,
               h('div', { class: 'muted', style: { margin: '10px 0 2px' } }, '목표 별 − 비교성 = 차등측광 결과'), cvDiff, diffNote),
             h('div', { class: 'panel', style: { marginTop: '16px' } }, h('h3', null, '④ 나머지 별도 한꺼번에 처리'), batchBox))),
         h('details', null, h('summary', null, '차등측광은 어떻게 되는 건가요?'),

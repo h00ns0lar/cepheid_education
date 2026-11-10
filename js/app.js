@@ -106,6 +106,10 @@
       console.error(e);
       stage.appendChild(h('div', { class: 'callout bad' }, '화면을 그리는 중 오류가 났어요: ' + e.message));
     }
+    // "3단계 · 제목" 을 작은 "STEP 3 / 6" 표시와 큰 제목으로 나눈다
+    const title = stage.querySelector('h2');
+    const m = title && /^(\d)단계 · (.+)$/.exec(title.textContent);
+    if (m) { title.textContent = m[2]; stage.insertBefore(h('div', { class: 'eyebrow' }, 'STEP ' + m[1] + ' / 6'), title); }
     C.refreshNav();
     window.scrollTo(0, 0);
   };
@@ -120,6 +124,11 @@
       st.appendChild(h('div', { class: cls, onclick: () => { if (n <= C.maxStep()) C.go(n); } },
         h('span', { class: 'n' }, C.isDone(n) ? '✓' : String(n)), name));
     });
+    // 왼쪽 진행 상황 카드
+    const done = [1, 2, 3, 4, 5, 6].filter((k) => C.isDone(k)).length;
+    C.$('#ring').style.setProperty('--p', String(Math.round((done / 6) * 100)));
+    C.$('#ring-n').textContent = done + '/6';
+    C.$('#ring-sub').textContent = done === 6 ? '모두 끝냈어요! 🎉' : C.STEP_NAMES[S.step - 1] + ' 단계 진행 중';
     C.$('#btn-prev').disabled = S.step <= 1;
     const nxt = C.$('#btn-next');
     nxt.style.visibility = S.step >= 6 ? 'hidden' : 'visible';
