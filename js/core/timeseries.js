@@ -1,4 +1,4 @@
-// 시계열 분석: Lomb-Scargle 주기도, 위상 접기, 푸리에 적합.
+// 시계열 분석: Lomb-Scargle 주기도, 위상 중첩, 푸리에 적합.
 (function (g) {
   const C = g.CEPH = g.CEPH || {};
 

@@ -56,6 +56,8 @@
   };
   C.lyFmt = (dpc) => (dpc * 3.26156 / 1e6).toFixed(2) + ' 백만 광년';
   // 광년을 읽기 쉬운 한국어로: 250만 광년, 1.2억 광년
+  // 거리 표시: 광년을 먼저, 파섹은 괄호 안에 (예: 277만 광년 (849.5 kpc))
+  C.distFmt = (dpc) => C.lyKo(dpc * 3.26156) + ' (' + C.pcFmt(dpc) + ')';
   C.lyKo = (ly) => ly >= 1e8 ? (ly / 1e8).toFixed(1) + '억 광년' : ly >= 1e4 ? Math.round(ly / 1e4).toLocaleString('ko-KR') + '만 광년' : Math.round(ly).toLocaleString('ko-KR') + ' 광년';
 
   // 이미지 → 캔버스 (asinh 스트레칭)

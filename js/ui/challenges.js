@@ -88,7 +88,7 @@
         hint: 't ÷ P = ' + fx(t / P2, 3) + ' 에서 정수 부분을 빼 보세요', show: fx(frac(t / P2), 3) + '  (' + t + ' ÷ ' + P2 + ' = ' + fx(t / P2, 3) + ')'
       }));
       body.append(
-        h('p', null, '③ 위상 접기에서 컴퓨터는 모든 촬영 시각을 한 주기 안의 위치(위상)로 바꿨어요. 별 ', h('b', null, ctx.id()), '의 주기를 ', h('b', null, P2 + '일'), '로 놓고, 아래 5장의 위상을 계산기로 직접 구해 보세요.'),
+        h('p', null, '③ 위상 중첩에서 컴퓨터는 모든 촬영 시각을 한 주기 안의 위치(위상)로 바꿨어요. 별 ', h('b', null, ctx.id()), '의 주기를 ', h('b', null, P2 + '일'), '로 놓고, 아래 5장의 위상을 계산기로 직접 구해 보세요.'),
         h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '위상 = (t ÷ P)의 소수 부분', h('br'), h('small', { class: 'muted' }, '예: t ÷ P = 3.27 이면 위상 0.27 (0과 1은 같은 위치로 봐요)')),
         C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '새 문제')] }));
     });
@@ -205,24 +205,7 @@
         out);
     });
 
-    // ④ 광도 손계산
-    const d4 = C.chal('④ 주기에서 광도까지 직접 계산하기: 식을 적용한 방법', function build(body) {
-      const use = ctx.rows();
-      if (!use.length) { body.append(note('warn', '쓸 수 있는 세페이드가 없어요.')); return; }
-      const r = pick(use, 1)[0];
-      const lp = Math.log10(r.P), M = lit.a * (lp - 1) + lit.b, L = C.lumSun(M);
-      const rows = [
-        { label: 'log P = log₁₀(P)', ans: lp, tol: 0.004, hint: '계산기의 log 키로 ' + fx(r.P) + '의 상용로그를 구해요', show: fx(lp, 3) },
-        { label: '절대등급 M = a(log P − 1) + b', ans: M, tol: 0.03, hint: 'a와 b는 위 식의 값을 쓰세요', show: fx(M) + '  (' + fx(lit.a) + ' × (' + fx(lp, 3) + ' − 1) + (' + fx(lit.b) + '))' },
-        { label: '광도 L = 10^(0.4 × (4.83 − M))', unit: '태양의 몇 배', ans: L, tolRel: 0.04, hint: '4.83 − M 에 0.4를 곱해서 10의 거듭제곱을 해요', show: Math.round(L).toLocaleString('ko-KR') + ' 배' }
-      ];
-      body.append(
-        h('p', null, '위 ②에서 컴퓨터는 주기만으로 각 세페이드의 진짜 밝기를 구했어요. 별 ', h('b', null, r.id), '(주기 ', h('b', null, fx(r.P) + '일'), ')를 직접 계산해 보세요.'),
-        h('div', { class: 'formula', style: { fontSize: '1.05rem' } }, '식: M = ', h('span', { class: 'hl' }, fx(lit.a)), ' × (log P − 1) + (', h('span', { class: 'hl' }, fx(lit.b)), ')', h('br'), h('small', { class: 'muted' }, '태양의 절대등급은 4.83이에요.')),
-        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
-    });
-
-    return { zone: C.chalZone([d1, d2, d3, d4]), refresh: () => { d1.refresh(); d2.refresh(); d4.refresh(); } };
+    return { zone: C.chalZone([d1, d2, d3]), refresh: () => { d1.refresh(); d2.refresh(); } };
   };
 
   // ---------------------------------------------------------------- 6단계
@@ -236,24 +219,9 @@
     const dK = (mu) => C.distFromMu(mu) / 1000;   // kpc
     const dMean = dK(mean), dErr = dMean * Math.LN10 / 5 * sem;
     const A = ctx.gal.Av;
-    const note0 = h('div', { class: 'callout' }, '이 과제의 계산은 ', h('b', null, '먼지 보정 없이'), ' 해요. (표와 비교하려면 위의 "먼지 보정" 체크를 끄고 보세요. 먼지 보정은 ④에서 따로 해 봐요.)');
+    const note0 = h('div', { class: 'callout' }, '이 과제의 계산은 ', h('b', null, '먼지 보정 없이'), ' 해요. (표와 비교하려면 위의 "먼지 보정" 체크를 끄고 보세요. 먼지 보정은 ③에서 따로 해 봐요.)');
 
-    const d1 = C.chal('① 별 하나의 거리 직접 계산하기: 포그슨 방정식 적용', function build(body) {
-      const r = pick(list, 1)[0], mu = r.m - r.M;
-      const rows = [
-        { label: '거리 모듈러스 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: fx(mu) },
-        { label: '거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dK(mu), tolRel: 0.015, hint: '(μ+5)÷5 를 구해 10의 거듭제곱을 한 뒤 1000으로 나눠 kpc로 바꿔요', show: fx(dK(mu), 1) + ' kpc  (= ' + fx(C.distFromMu(mu), 0) + ' pc)' }
-      ];
-      body.append(
-        h('p', null, '위 표에서 컴퓨터가 별마다 계산한 값을 직접 구해 보세요. 별 ', h('b', null, r.id), ' 이에요.'),
-        h('div', { class: 'kpi' },
-          h('div', null, h('div', { class: 'v' }, fx(r.m)), h('div', { class: 'l' }, '겉보기등급 m')),
-          h('div', null, h('div', { class: 'v' }, fx(r.M)), h('div', { class: 'l' }, '절대등급 M'))),
-        note0,
-        C.quiz(rows, { extra: [h('button', { onclick: () => { body.innerHTML = ''; build(body); } }, '다른 별로')] }));
-    });
-
-    const d2 = C.chal('② 평균과 오차 직접 계산하기: 별들의 μ를 종합하는 방법', function (body) {
+    const d2 = C.chal('① 평균과 오차 직접 계산하기: 별들의 μ를 종합하는 방법', function (body) {
       const rows = [
         { label: '평균 μ = (μ₁ + μ₂ + … ) ÷ ' + n, ans: mean, tol: 0.01, hint: '모든 μ를 더해 ' + n + '으로 나눠요', show: fx(mean) },
         { label: '표준편차 s = √[ Σ(μ − 평균)² ÷ (' + n + ' − 1) ]', ans: sd, tol: 0.015, hint: '편차의 제곱을 모두 더해 ' + (n - 1) + '로 나눈 뒤 제곱근을 구해요', show: fx(sd, 3) },
@@ -267,7 +235,7 @@
         C.quiz(rows, { solution: [h('p', null, '표준오차는 "별이 많을수록 평균이 믿을 만해진다"는 걸 숫자로 보여줘요. 별이 4배 많아지면 오차는 절반이 돼요.')] }));
     });
 
-    const d3 = C.chal('③ 최종 거리와 오차 직접 계산하기', function (body) {
+    const d3 = C.chal('② 최종 거리와 오차 직접 계산하기', function (body) {
       const rows = [
         { label: '평균 μ로 구한 거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dMean, tolRel: 0.015, hint: '평균 μ = ' + fx(mean) + ' 를 포그슨 식에 넣어요', show: fx(dMean, 1) + ' kpc' },
         { label: '거리 오차 δd = d × (ln 10 ÷ 5) × 표준오차', unit: 'kpc', ans: dErr, tolRel: 0.15, hint: 'ln 10 ÷ 5 ≈ 0.46 이에요. d에 0.46과 표준오차 ' + fx(sem, 3) + ' 를 곱해요', show: fx(dErr, 1) + ' kpc  (' + fx(dMean, 1) + ' × 0.4605 × ' + fx(sem, 3) + ')' }
@@ -278,7 +246,7 @@
         C.quiz(rows, { solution: [h('p', null, 'μ가 0.1등급 달라지면 거리는 약 4.6% 달라져요. 그래서 밝기를 정확히 재는 일이 중요해요.')] }));
     });
 
-    const d4 = C.chal('④ 먼지 보정 직접 해 보기: 성간소광 A_V 빼기', function (body) {
+    const d4 = C.chal('③ 먼지 보정 직접 해 보기: 성간소광 A_V 빼기', function (body) {
       const muC = mean - A, dC = dK(muC);
       const rows = [
         { label: "보정한 μ' = 평균 μ − A_V", ans: muC, tol: 0.01, hint: '평균 μ에서 ' + fx(A) + ' 를 빼요', show: fx(muC) },
@@ -289,6 +257,6 @@
         C.quiz(rows, { solution: [h('p', null, '위의 "먼지 보정" 체크를 켜면 컴퓨터가 구한 보정 값과 같은 결과가 나와요. 보정 전과 거리가 ' + fx((dMean / dC - 1) * 100, 1) + '% 달라지는 걸 확인해 보세요.')] }));
     });
 
-    return { zone: C.chalZone([d1, d2, d3, d4]), refresh: () => {} };
+    return { zone: C.chalZone([d2, d3, d4]), refresh: () => {} };
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -248,7 +248,7 @@
     const guessLbl = h('b', { style: { fontSize: '1.3rem' } });
     const guessTag = h('span', { class: 'tag' });
     function showGuess() {
-      guessLbl.textContent = '약 ' + C.lyKo(Math.pow(10, +guessIn.value));
+      guessLbl.textContent = '약 ' + C.distFmt(Math.pow(10, +guessIn.value) / 3.26156);
       guessTag.className = 'tag' + (S.pred.dist0 ? ' ok' : '');
       guessTag.textContent = S.pred.dist0 ? '내 예상 저장됨' : '슬라이더를 움직여 골라 보세요';
     }

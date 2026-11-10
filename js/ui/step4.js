@@ -1,4 +1,4 @@
-// 4단계: 시계열분석 — Lomb-Scargle 주기도, 위상 접기, 푸리에 적합, 분류
+// 4단계: 시계열분석 — Lomb-Scargle 주기도, 위상 중첩, 푸리에 적합, 분류
 // 첫 별(V1)은 학생이 직접: 주기를 먼저 어림하고, 주기와 종류를 스스로 정해야 "나머지 자동" 버튼이 열린다.
 (function (g) {
   const C = g.CEPH;
@@ -36,7 +36,7 @@
       const v1Done = () => !!(S.an[first] && S.an[first].P && S.an[first].type);
       const guessed = () => S.pred.p1 !== undefined;
       const gateOn = () => cur === first && !guessed() && !(S.an[first] && S.an[first].P);
-      // V1은 학생이 고르기 전까지 자기 어림값(건너뛰면 5일)으로 접혀 있다. 다른 별은 컴퓨터가 찾은 값으로 시작.
+      // V1은 학생이 고르기 전까지 자기 어림값(건너뛰면 5일)으로 겹쳐 놓는다. 다른 별은 컴퓨터가 찾은 값으로 시작.
       const curP = () => {
         if (S.an[cur] && S.an[cur].P) return S.an[cur].P;
         if (cur === first) return S.pred.p1 > 0 ? S.pred.p1 : 5;
@@ -71,7 +71,7 @@
           nIn.addEventListener('input', () => { const n = +nIn.value; if (n > 0) pIn.value = (C.SIM.NIGHTS / n).toFixed(1); });
           gateBox.append(h('div', { class: 'gate-card' },
             h('b', null, '🔎 먼저 어림해 보기'),
-            h('p', null, '위 그래프에서 이 별(' + first + ')이 가장 밝아지는 때(점이 위로 몰린 곳)가 90일 동안 몇 번 있나요? 그 횟수로 90일을 나누면 주기를 어림할 수 있어요. 어림해야 아래 주기도와 위상 접기가 열려요.'),
+            h('p', null, '위 그래프에서 이 별(' + first + ')이 가장 밝아지는 때(점이 위로 몰린 곳)가 90일 동안 몇 번 있나요? 그 횟수로 90일을 나누면 주기를 어림할 수 있어요. 어림해야 아래 주기도와 위상 중첩이 열려요.'),
             h('div', { class: 'row' },
               h('label', { class: 'kv' }, h('span', { class: 'muted' }, '밝아진 횟수'), nIn, h('span', { class: 'muted' }, '번 →')),
               h('label', { class: 'kv' }, h('span', { class: 'muted' }, '어림한 주기'), pIn, h('span', { class: 'muted' }, '일')),
@@ -87,8 +87,8 @@
         if (guessed() && !v1Done()) {
           const best = autoOf().P;
           gateBox.append(S.pred.p1 > 0
-            ? h('div', { class: 'callout' }, h('b', null, '내 어림 ' + S.pred.p1.toFixed(1) + '일'), ' · 주기도의 가장 높은 봉우리 ', h('b', null, best.toFixed(1) + '일'), ' (차이 ' + Math.abs((S.pred.p1 / best - 1) * 100).toFixed(0) + '%). 아래 위상 접기는 내 어림으로 접혀 있어요. 점들이 한 줄로 모이도록 주기를 정해 보세요.')
-            : h('div', { class: 'callout' }, '어림을 건너뛰었어요. 아래 위상 접기는 5일로 접혀 있어요. 주기도의 봉우리를 눌러 주기를 바꿔 보세요.'));
+            ? h('div', { class: 'callout' }, h('b', null, '내 어림 ' + S.pred.p1.toFixed(1) + '일'), ' · 주기도의 가장 높은 봉우리 ', h('b', null, best.toFixed(1) + '일'), ' (차이 ' + Math.abs((S.pred.p1 / best - 1) * 100).toFixed(0) + '%). 아래 위상 중첩은 내 어림 주기로 겹쳐 놓았어요. 점들이 한 줄로 모이도록 주기를 정해 보세요.')
+            : h('div', { class: 'callout' }, '어림을 건너뛰었어요. 아래 위상 중첩은 5일 주기로 겹쳐 놓았어요. 주기도의 봉우리를 눌러 주기를 바꿔 보세요.'));
         }
       }
 
@@ -100,7 +100,7 @@
         const P = autoOf().P;
         const hints = [
           '주기도에서 가장 높은 봉우리를 눌러 보세요.',
-          '위상 접기의 점들이 한 줄로 모이면 맞는 주기예요. 아래 "겹침 정도"가 0.12보다 작으면 잘 맞아요.',
+          '위상 중첩의 점들이 한 줄로 모이면 맞는 주기예요. 아래 "겹침 정도"가 0.12보다 작으면 잘 맞아요.',
           '주기는 대략 ' + Math.floor(P * 0.9) + '~' + Math.ceil(P * 1.1) + '일 사이예요.'
         ];
         hintBox.append(h('div', { class: 'hint-box' },
@@ -149,7 +149,7 @@
         lsPlot.vline(P, { color: '#e8890c', dash: [5, 4], w: 1.5 });
         lsNote.innerHTML = '가장 높은 봉우리(피크)부터 1, 2, 3… 번호가 붙어 있어요. 주황 점선이 지금 쓰는 주기 <b>' + P.toFixed(2) + '일</b>이에요. 봉우리를 클릭하면 그 주기로 바뀝니다.';
 
-        // 위상 접기
+        // 위상 중첩
         const ph = lc.t.map((t) => { let p = t / P - fit.phase0; p -= Math.floor(p); return p; });
         const xs = [], ys = [], es = [];
         for (let k = 0; k < 2; k++) lc.t.forEach((t, i) => { xs.push(ph[i] + k); ys.push(lc.m[i]); es.push(lc.err[i]); });
@@ -173,7 +173,7 @@
         const sm = C.shapeMetrics(fit), sug = C.suggestType(fit), ty = typeOf(cur);
         shapeBox.innerHTML = '';
         if (cur === first && !ty) {
-          shapeBox.append(h('div', { class: 'callout' }, '🤔 위상 접기 곡선의 모양을 보고 이 별이 세페이드인지 직접 골라 보세요. 고르면 컴퓨터의 판정과 비교해 드려요. (세페이드는 빨리 밝아지고 천천히 어두워지는 톱니 모양, 식쌍성은 좌우 대칭으로 뾰족하게 어두워져요)'));
+          shapeBox.append(h('div', { class: 'callout' }, '🤔 위상 중첩 곡선의 모양을 보고 이 별이 세페이드인지 직접 골라 보세요. 고르면 컴퓨터의 판정과 비교해 드려요. (세페이드는 빨리 밝아지고 천천히 어두워지는 톱니 모양, 식쌍성은 좌우 대칭으로 뾰족하게 어두워져요)'));
         } else {
           shapeBox.append(h('div', { class: 'callout' },
             h('b', null, '모양 단서: '),
@@ -189,7 +189,7 @@
           h('b', null, '이 별은?'),
           h('button', { class: ty === 'cepheid' ? 'on' : '', onclick: () => classify('cepheid') }, '🟢 세페이드 변광성'),
           h('button', { class: ty === 'eb' ? 'on' : '', onclick: () => classify('eb') }, '⚪ 세페이드가 아님 (식쌍성 등)')));
-        if (ty && ty !== sug) classBox.append(h('div', { class: 'callout warn', style: { marginTop: '8px' } }, '곡선 모양이 다른 쪽에 가깝게 보여요. 위상 접기 곡선을 다시 살펴보세요.'));
+        if (ty && ty !== sug) classBox.append(h('div', { class: 'callout warn', style: { marginTop: '8px' } }, '곡선 모양이 다른 쪽에 가깝게 보여요. 위상 중첩 곡선을 다시 살펴보세요.'));
         else if (ty && cur === first) classBox.append(h('div', { class: 'callout good', style: { marginTop: '8px' } }, '👍 컴퓨터의 판정과 같아요! ' + (good === 'ok' ? '주기도 잘 맞아요.' : '그런데 점들이 아직 흩어져 있어요. 주기를 조금 더 다듬어 보세요.')));
       }
 
@@ -242,7 +242,7 @@
           h('div', { class: 'panel' },
             h('h3', null, '② 주기도 (Lomb–Scargle): 어떤 주기가 잘 맞을까?'), cvLS, lsNote),
           h('div', { class: 'panel' },
-            h('h3', null, '③ 위상 접기: 한 주기로 겹쳐 보기'), cvFold,
+            h('h3', null, '③ 위상 중첩: 한 주기로 겹쳐 보기'), cvFold,
             h('div', { class: 'row', style: { margin: '8px 0' } }, h('span', { class: 'muted' }, '주기를 조금씩 바꾸기'), slider, pnum, h('span', { class: 'muted' }, '일')),
             h('div', { class: 'row' }, btnBest, btnHalf, btnDbl),
             hintBox)),
@@ -256,9 +256,9 @@
         h('div', { class: 'panel', style: { marginBottom: '20px' } },
           h('h3', null, '① 광도곡선 (시간에 따른 밝기)'), cvTime, gateBox),
         lockArea,
-        h('details', null, h('summary', null, '주기도·위상 접기 읽는 법'),
+        h('details', null, h('summary', null, '주기도·위상 중첩 읽는 법'),
           h('p', null, h('b', null, '주기도'), ': 가로축은 시험해 본 주기, 세로축은 그 주기로 되풀이되는 물결(사인파)이 자료와 얼마나 잘 맞는지예요. 가장 높은 봉우리가 후보 주기입니다. 밝기 곡선이 톱니 모양이면 진짜 주기의 1/2, 1/3 자리에도 작은 가짜 봉우리가 생겨요.'),
-          h('p', null, h('b', null, '위상 접기'), ': 모든 관측 시각을 "한 주기 중 어디쯤인가(0~1, 위상)"로 바꿔서 한 주기 안에 겹쳐 그려요. 주기가 맞으면 점들이 하나의 매끈한 곡선 위에 모이고, 틀리면 흩어져요. 슬라이더로 주기를 조금씩 바꿔서 점들이 가장 매끈하게 모이는 값을 찾아보세요.'),
+          h('p', null, h('b', null, '위상 중첩'), ': 모든 관측 시각을 "한 주기 중 어디쯤인가(0~1, 위상)"로 바꿔서 한 주기 안에 겹쳐 그려요. 주기가 맞으면 점들이 하나의 매끈한 곡선 위에 모이고, 틀리면 흩어져요. 슬라이더로 주기를 조금씩 바꿔서 점들이 가장 매끈하게 모이는 값을 찾아보세요.'),
           h('p', null, h('b', null, '곡선 맞추기(푸리에 적합)'), ': 주황 곡선은 물결(사인파) 3개를 더해 점들에 맞춘 곡선이에요. 이 곡선에서 평균 등급 ⟨m⟩과 밝기 변화 폭(진폭)을 구해요. 이 ⟨m⟩이 다음 단계에서 쓸 "겉보기등급"입니다.'),
           h('p', null, h('b', null, '세페이드 vs 식쌍성'), ': 세페이드는 톱니 모양(빨리 밝아지고 천천히 어두워짐), 식쌍성은 평평하다가 뾰족하게 어두워지는 좌우 대칭 곡선이에요.')),
         chal.zone);
