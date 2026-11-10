@@ -62,6 +62,7 @@
       summary.innerHTML = '';
       if (filled < rows.length) summary.append(note('warn', '아직 입력하지 않은 칸이 있어요.'));
       else summary.append(note(right === rows.length ? 'good' : 'warn', right + ' / ' + rows.length + ' 맞았어요. ' + (right === rows.length ? '컴퓨터와 같은 결과를 직접 계산해 냈어요!' : '틀린 칸을 다시 계산해 보고, 막히면 "정답과 풀이 보기"를 열어 보세요.')));
+      if (filled === rows.length && opts.onGrade) opts.onGrade(right, rows.length);
     } }, '채점하기');
     return h('div', null, table, h('div', { class: 'row', style: { marginTop: '8px' } }, grade, opts.extra || null), summary, sol);
   };

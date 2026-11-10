@@ -30,29 +30,43 @@
         return { list, mean, sd, sem, d, dErr: d * Math.LN10 / 5 * sem, A };
       }
 
+      // V1 하나는 학생이 포그슨 방정식으로 직접 계산한다. 맞히거나 풀이를 보면 나머지 별은 컴퓨터가 계산해 준다.
+      const calcDone = () => !!S.log.pogson || S.revealed;
       function drawCalc() {
         const f = rows[0];
-        const M0 = rel.a * (f.logP - 1) + rel.b;
-        const mIn = h('input', { type: 'number', step: '0.01', value: f.m.toFixed(2), style: { width: '90px' } });
-        const MIn = h('input', { type: 'number', step: '0.01', value: M0.toFixed(2), style: { width: '90px' } });
-        const out = h('div', { class: 'formula' });
-        function upd() {
-          const mu = +mIn.value - +MIn.value, d = C.distFromMu(mu);
-          out.innerHTML = '';
-          out.append('μ = m − M = ' + (+mIn.value).toFixed(2) + ' − (' + (+MIn.value).toFixed(2) + ') = ', h('span', { class: 'hl' }, mu.toFixed(2)), h('br'),
-            'd = 10', h('sup', null, '(μ+5)/5'), ' pc = ', h('span', { class: 'hl' }, C.pcFmt(d)), ' ≈ ' + C.lyFmt(d));
-        }
-        mIn.oninput = upd; MIn.oninput = upd;
+        const m = +f.m.toFixed(2), M = +(rel.a * (f.logP - 1) + rel.b).toFixed(2);
+        const mu = m - M, dK = C.distFromMu(mu) / 1000;
         calcBox.innerHTML = '';
+        const quiz = C.quiz([
+          { label: '거리 모듈러스 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: mu.toFixed(2) + '  (' + m.toFixed(2) + ' − (' + M.toFixed(2) + '))' },
+          { label: '거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dK, tolRel: 0.015, hint: '(μ+5)÷5 를 구해 10의 거듭제곱을 하면 pc 단위 거리가 나와요. 1000으로 나누면 kpc예요', show: dK.toFixed(1) + ' kpc  (= ' + Math.round(dK * 1000).toLocaleString('ko-KR') + ' pc)' }
+        ], {
+          onGrade: (right, total) => { if (right === total && !S.log.pogson) { S.log.pogson = '직접'; C.save(); drawResult(); } },
+          extra: calcDone() ? null : [h('button', { class: 'ghost', onclick: () => {
+            S.log.pogson = '풀이'; C.save();
+            const sol = calcBox.querySelector('details'); if (sol) sol.open = true;
+            drawResult();
+          } }, '모르겠어요, 풀이 보고 넘어가기')],
+          solution: [h('p', null, '① μ = ' + m.toFixed(2) + ' − (' + M.toFixed(2) + ') = ' + mu.toFixed(2)),
+            h('p', null, '② (μ + 5) ÷ 5 = ' + ((mu + 5) / 5).toFixed(3) + ' → d = 10^' + ((mu + 5) / 5).toFixed(3) + ' = ' + Math.round(dK * 1000).toLocaleString('ko-KR') + ' pc = ' + dK.toFixed(1) + ' kpc')]
+        });
         calcBox.append(
           h('div', { class: 'formula' }, 'm − M = 5 log', h('sub', null, '10'), '(d / 10 pc)', h('br'), h('small', { class: 'muted' }, '⇔  d = 10', h('sup', null, '(m − M + 5)/5'), ' pc')),
-          h('div', { class: 'row' }, h('span', null, '겉보기등급 m'), mIn, h('span', null, '절대등급 M'), MIn, h('small', { class: 'muted' }, '(' + f.id + ' 의 값이 채워져 있어요. 바꿔 보세요!)')), out);
-        upd();
+          h('p', null, '첫 세페이드 ', h('b', null, f.id), '의 값으로 거리를 직접 계산해 보세요. 계산기를 써도 좋아요. (먼지 보정은 아래에서 따로 해요)'),
+          h('div', { class: 'kpi', style: { marginBottom: '12px' } },
+            h('div', null, h('div', { class: 'v' }, m.toFixed(2)), h('div', { class: 'l' }, f.id + '의 겉보기등급 m (4단계)')),
+            h('div', null, h('div', { class: 'v' }, M.toFixed(2)), h('div', { class: 'l' }, f.id + '의 절대등급 M (5단계)'))),
+          quiz);
       }
 
       function drawResult() {
         const r = compute();
         box.innerHTML = '';
+        if (!calcDone()) {
+          box.append(h('div', { class: 'panel locked-note' }, '🔒 위에서 ' + rows[0].id + '의 거리를 직접 계산하면, 나머지 별들은 컴퓨터가 같은 방법으로 계산해 줘요.'));
+          chal.refresh();
+          return;
+        }
         const cv = h('canvas', { class: 'plot' });
         const pl = new C.Plot(cv, { xlabel: 'log P', ylabel: '거리 모듈러스 μ = m − M', invertY: false });
         const tbl = h('table', null,
@@ -151,6 +165,7 @@
           ['먼지 보정 방향 예상', P.ext ? { far: '멀어진다', near: '가까워진다', same: '그대로' }[P.ext] + ox(P.ext === 'near') : '—'],
           ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
           ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],
+          ['포그슨 방정식 계산 (' + first + ')', S.log.pogson === '직접' ? '직접 계산 ✔' : S.log.pogson === '풀이' ? '풀이 보고 넘어감' : '—'],
           ['힌트 사용', (S.log.hints || 0) + '번']
         ];
         return h('div', { class: 'record' },
@@ -164,7 +179,7 @@
       root.append(
         h('h2', null, '6단계 · 포그슨 방정식으로 거리 구하기'),
         h('p', { class: 'lead' }, '이제 마지막입니다. 주기로 구한 진짜 밝기(절대등급 M)와 하늘에서 보이는 밝기(겉보기등급 m)를 비교해, 은하까지의 거리를 계산해요.'),
-        h('div', { class: 'panel' }, h('h3', null, '포그슨 방정식 계산기'), calcBox),
+        h('div', { class: 'panel' }, h('h3', null, '포그슨 방정식으로 직접 계산하기'), calcBox),
         h('div', { style: { height: '16px' } }), box, chal.zone);
       drawCalc(); drawResult();
     }

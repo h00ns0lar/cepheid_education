@@ -253,3 +253,4 @@ table.quiz td.qmark.warn { color: var(--orange); }
 .hint-box button { justify-self: start; }
 .record { margin: 14px 0; padding: 16px 18px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .record td:last-child { text-align: left; font-weight: 600; }
+.locked-note { text-align: center; color: var(--muted); background: var(--panel2); border-style: dashed; }
