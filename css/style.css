@@ -240,3 +240,16 @@ table.quiz td.qmark.warn { color: var(--orange); }
   .panel { border: 1px solid #999; background: #fff; box-shadow: none; }
   b, .kpi .v, .result-big { color: #000; }
 }
+
+/* ---- 예측하고 확인하기 / 직접 풀기 ---- */
+.locked-area { position: relative; filter: blur(3px) grayscale(.3); opacity: .55; pointer-events: none; user-select: none; }
+.gate-card { margin-top: 14px; padding: 16px 18px; border-radius: 14px; background: linear-gradient(135deg, #eef3ff, #f7f9ff); border: 1px solid #cfdcff; }
+.gate-card b { font-size: 1.05rem; }
+.predict-box { padding: 14px 16px; margin-bottom: 12px; border-radius: 14px; background: #fff8ec; border: 1px solid #fbe0b5; }
+.panel.predict { background: linear-gradient(180deg, #fffaf1, #ffffff); border-color: #fbe0b5; }
+.panel.predict h3::before { background: linear-gradient(#ffb547, var(--orange)); }
+.hint-box { margin-top: 12px; display: grid; gap: 6px; font-size: .9rem; }
+.hint-box > div { padding: 8px 12px; border-radius: 10px; background: #fffbe8; border: 1px solid #f5e3a3; }
+.hint-box button { justify-self: start; }
+.record { margin: 14px 0; padding: 16px 18px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
+.record td:last-child { text-align: left; font-weight: 600; }

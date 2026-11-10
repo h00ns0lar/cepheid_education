@@ -58,13 +58,28 @@
         const tbl = h('table', null,
           h('tr', null, h('th', null, '별'), h('th', null, 'P (일)'), h('th', null, 'm'), h('th', null, 'M'), h('th', null, 'μ = m − M' + (S.ext ? ' − A_V' : '')), h('th', null, '거리 d')),
           r.list.map((x) => h('tr', null, h('td', null, x.id), h('td', { class: 'mono' }, x.P.toFixed(2)), h('td', { class: 'mono' }, x.m.toFixed(2)), h('td', { class: 'mono' }, x.M.toFixed(2)), h('td', { class: 'mono' }, x.mu.toFixed(2)), h('td', { class: 'mono' }, C.pcFmt(x.d)))));
-        const extChk = h('input', { type: 'checkbox', checked: S.ext, onchange: (e) => { S.ext = e.target.checked; S.revealed = false; C.save(); drawResult(); C.refreshNav(); } });
+        const extChk = h('input', { type: 'checkbox', checked: S.ext, disabled: S.pred.ext === undefined, onchange: (e) => { S.ext = e.target.checked; S.revealed = false; C.save(); drawResult(); C.refreshNav(); } });
+        // 🤔 먼지 보정을 하면 거리는 어떻게 될까? 먼저 예상한 뒤에 체크할 수 있다
+        const muNo = rows.reduce((a, x) => a + x.m - (rel.a * (x.logP - 1) + rel.b), 0) / rows.length;
+        const change = (C.distFromMu(muNo - gal.Av) / C.distFromMu(muNo) - 1) * 100;
+        const EXT = { far: '멀어진다', near: '가까워진다', same: '그대로' };
+        const extPred = S.pred.ext === undefined
+          ? h('div', { class: 'predict-box', style: { marginTop: '12px' } },
+            h('b', null, '🤔 먼저 예상해 보기: 먼지 보정을 하면 거리는 어떻게 될까요?'),
+            h('div', { class: 'chips', style: { marginTop: '8px' } },
+              Object.keys(EXT).map((k) => h('div', { class: 'chip', onclick: () => { S.pred.ext = k; C.save(); drawResult(); } }, EXT[k]))),
+            h('small', { class: 'muted' }, '예상을 고르면 아래 체크박스가 열려요.'))
+          : S.ext
+            ? h('div', { class: 'callout ' + (S.pred.ext === 'near' ? 'good' : 'warn') },
+              (S.pred.ext === 'near' ? '🎉 맞아요! ' : '내 예상은 "' + EXT[S.pred.ext] + '"였지만, ') + '먼지 보정을 하니 거리가 ' + Math.abs(change).toFixed(1) + '% 가까워졌어요. 먼지에 가려 어둡게 보이던 만큼(m이 커진 만큼)을 빼 주니, 별이 원래 밝기로 돌아와 더 가깝게 계산된 거예요.')
+            : h('div', { class: 'callout' }, '내 예상: "' + EXT[S.pred.ext] + '". 이제 체크박스를 켜서 확인해 보세요.');
         box.append(
           h('div', { class: 'panel' },
             h('h3', null, '별마다 거리 구하기'), tbl,
             h('div', { style: { marginTop: '10px' }, class: 'row' },
               h('label', { class: 'chk' }, extChk, h('span', null, '우주 먼지로 어두워진 만큼(성간소광 A_V = ' + gal.Av.toFixed(2) + ' 등급) 보정하기')),
-              h('small', { class: 'muted' }, '먼지가 별빛을 가리면 별이 더 어둡게 보여서(m이 커져서) 실제보다 멀게 계산돼요. 실제 연구에서는 별의 색을 이용해 먼지의 영향을 따로 재서 빼 줍니다.'))),
+              h('small', { class: 'muted' }, '실제 연구에서는 별의 색을 이용해 먼지의 영향을 따로 재서 빼 줍니다.')),
+            extPred),
           h('div', { class: 'grid cols-2', style: { marginTop: '16px' } },
             h('div', { class: 'panel' }, h('h3', null, '세페이드마다 μ 값이 비슷하게 나오나요?'), cv),
             h('div', { class: 'panel' },
@@ -112,10 +127,36 @@
             ' ' + (S.ext ? '먼지 보정을 끄면' : '먼지 보정을 켜면') + ' 거리는 ' + C.pcFmt(other) + ' (오차 ' + (errOther >= 0 ? '+' : '') + errOther.toFixed(1) + '%) 가 돼요.'),
           h('div', { class: 'callout' },
             h('b', null, '내 분석 성적표 · '), '세페이드 ' + truthC + '개 중 ' + found + '개를 찾았고 · 식쌍성을 세페이드로 잘못 넣은 것 ' + wrong + '개 · 주기를 4% 안으로 맞힌 별 ' + periodOK + '개'),
+          myRecord(r, dTrue),
           h('p', { class: 'muted' }, gal.fact),
           h('div', { class: 'row' },
             h('button', { onclick: () => window.print() }, '🖨 결과 인쇄 / PDF 저장'),
-            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.save(); C.go(1); }, '도전') }, '🎲 다른 은하에 도전'))));
+            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.save(); C.go(1); }, '도전') }, '🎲 다른 은하에 도전'))));
+      }
+
+      // 📒 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것 (점수는 매기지 않는다)
+      function myRecord(r, dTrue) {
+        const LY = 3.26156, first = S.picked[0], P = S.pred;
+        const an = S.picked.map((id) => S.an[id] || {});
+        const cnt = (k, v) => an.filter((a) => a[k] === v).length;
+        const inc = C.cepheidRows().filter((x) => x.incl);
+        const bright = inc.length ? inc.reduce((a, x) => (x.P > a.P ? x : a)).id : null;
+        const ox = (ok) => (ok ? ' ✔' : ' ✘');
+        const rowsR = [
+          ['처음 예상한 거리', P.dist0 ? C.lyKo(P.dist0) : '예상하지 않았어요'],
+          ['내가 잰 거리', C.lyKo(r.d * LY)],
+          ['실제 거리', C.lyKo(dTrue * LY)],
+          [first + ' 주기: 내 어림 → 최종', (P.p1 > 0 ? P.p1.toFixed(1) + '일' : P.p1 === null ? '건너뜀' : '—') + ' → ' + (S.an[first] && S.an[first].P ? S.an[first].P.toFixed(2) + '일' : '—')],
+          ['가장 밝은 별 예상', P.bright ? P.bright + (bright ? ox(P.bright === bright) : '') : P.bright === null ? '건너뜀' : '—'],
+          ['먼지 보정 방향 예상', P.ext ? { far: '멀어진다', near: '가까워진다', same: '그대로' }[P.ext] + ox(P.ext === 'near') : '—'],
+          ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
+          ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],
+          ['힌트 사용', (S.log.hints || 0) + '번']
+        ];
+        return h('div', { class: 'record' },
+          h('h3', null, '📒 내 기록'),
+          h('table', null, rowsR.map(([k, v]) => h('tr', null, h('td', null, k), h('td', null, v)))),
+          h('small', { class: 'muted' }, '다른 은하에 도전할 때는 더 많은 별을 직접 풀어 보세요.'));
       }
 
       const chal = C.chal6({ list: rows.map((r) => Object.assign({}, r, { M: rel.a * (r.logP - 1) + rel.b })), rel, gal, revealed: () => S.revealed });

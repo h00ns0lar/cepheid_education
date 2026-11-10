@@ -168,6 +168,7 @@
     const S = C.S;
     S.picked = []; S.observed = false; S.comps = {}; S.batchDone = false; S.an = {}; S.incl = {};
     S.calib = false; S.plFit = false; S.ext = false; S.revealed = false;
+    S.pred = {}; S.log = {};
   }
 
   C.steps[1] = {
@@ -242,6 +243,25 @@
     refreshList();
 
     const selAll = h('button', { onclick: () => { vars.forEach((v) => { if (S.picked.indexOf(v.id) < 0) S.picked.push(v.id); }); S.picked.sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)); S.observed = false; S.comps = {}; S.batchDone = false; S.an = {}; R.frames = {}; R.phot = {}; R.lc = {}; R.an = {}; C.save(); refreshList(); C.refreshNav(); } }, '모두 선택');
+    // 🤔 먼저 예상해 보기: 이 은하까지 몇 광년쯤일까? (마지막에 실제 거리와 비교)
+    const guessIn = h('input', { type: 'range', min: 4, max: 9, step: 0.05, value: S.pred.dist0 ? Math.log10(S.pred.dist0) : 6.5 });
+    const guessLbl = h('b', { style: { fontSize: '1.3rem' } });
+    const guessTag = h('span', { class: 'tag' });
+    function showGuess() {
+      guessLbl.textContent = '약 ' + C.lyKo(Math.pow(10, +guessIn.value));
+      guessTag.className = 'tag' + (S.pred.dist0 ? ' ok' : '');
+      guessTag.textContent = S.pred.dist0 ? '내 예상 저장됨' : '슬라이더를 움직여 골라 보세요';
+    }
+    guessIn.addEventListener('input', () => { S.pred.dist0 = Math.pow(10, +guessIn.value); C.save(); showGuess(); });
+    showGuess();
+    const predictCard = h('div', { class: 'panel predict', style: { marginTop: '16px' } },
+      h('h3', null, '🤔 먼저 예상해 보기'),
+      h('p', null, '이 은하까지 몇 광년쯤일까요? 감으로 골라 보세요. 마지막 단계에서 내가 잰 거리, 실제 거리와 나란히 비교해 드려요.'),
+      h('div', { class: 'row' }, guessLbl, h('span', { class: 'spacer' }), guessTag),
+      guessIn,
+      h('div', { class: 'row muted', style: { fontSize: '.78rem', justifyContent: 'space-between' } }, ['1만', '10만', '100만', '1000만', '1억', '10억'].map((t) => h('span', null, t))),
+      h('small', { class: 'muted' }, '참고: 우리 은하의 지름은 약 10만 광년이에요.'));
+
     const redo = h('button', { class: 'ghost', onclick: () => C.ask('다른 은하를 다시 뽑을까요? 진행이 초기화됩니다.', () => { resetDownstream(); C.S.galaxyId = null; C.save(); C.go(1); }, '다시 뽑기') }, '🎲 다시 뽑기');
 
     root.append(
@@ -257,6 +277,7 @@
             h('div', { class: 'callout' }, '모든 변광성은 같은 은하 안에 있으니 ', h('b', null, '거의 같은 거리'), '에 있다고 볼 수 있어요. 이게 뒤에서 주기-광도 관계를 찾아내는 열쇠예요.'),
             h('div', { class: 'row' }, count, h('span', { class: 'spacer' }), selAll, redo),
             h('div', { style: { marginTop: '10px' } }, list)),
+          predictCard,
           h('details', null, h('summary', null, '왜 변광성이 필요한가요?'),
             h('p', null, '세페이드는 ', h('b', null, '변하는 주기가 길수록 실제로 더 밝다'), '는 규칙(주기-광도 관계)을 따릅니다. 주기는 시간만 재면 알 수 있고, 그러면 진짜 밝기를 알 수 있어요. 진짜 밝기와 하늘에서 보이는 밝기를 비교하면 거리가 나옵니다 — 전구의 와트 수를 알면 불빛이 얼마나 어두워 보이는지로 거리를 아는 것과 같아요.'),
             h('p', null, '이 중에는 세페이드가 아닌 변광성(예: 두 별이 서로를 가리며 밝기가 변하는 식쌍성)도 섞여 있어요. 어느 것이 진짜 세페이드인지는 4단계에서 밝기 그래프(광도곡선)의 모양으로 가려내요.')))));
