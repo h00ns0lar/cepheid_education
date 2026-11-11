@@ -64,7 +64,27 @@
       // ---------- V1: 주기 어림 먼저 ----------
       function drawGate() {
         gateBox.innerHTML = '';
-        if (cur !== first) return;
+        if (cur !== first) {
+          // 다른 별도 주기를 정하기 전이면 같은 어림 칸을 보여 준다 (주기도를 잠그지는 않는다)
+          if (hasP(cur)) return;
+          const nIn = h('input', { type: 'number', min: 1, step: 1, style: { width: '80px' } });
+          const pIn = h('input', { type: 'number', min: 1, step: 0.1, style: { width: '90px' } });
+          const msg = h('div');
+          nIn.addEventListener('input', () => { const n = +nIn.value; if (n > 0) pIn.value = (C.SIM.NIGHTS / n).toFixed(1); });
+          gateBox.append(h('div', { class: 'gate-card' },
+            h('b', null, cur + '의 주기 어림해 보기'),
+            h('p', null, '위 그래프에서 이 별(' + cur + ')이 가장 밝아지는 때가 90일 동안 몇 번 있나요? 그 횟수로 90일을 나누면 주기를 어림할 수 있어요. 어림한 값으로 아래 위상 중첩을 시작하고, 주기도의 봉우리를 눌러 다듬으면 돼요. 바로 봉우리를 눌러도 괜찮아요.'),
+            h('div', { class: 'row' },
+              h('label', { class: 'kv' }, h('span', { class: 'muted' }, '밝아진 횟수'), nIn, h('span', { class: 'muted' }, '번 →')),
+              h('label', { class: 'kv' }, h('span', { class: 'muted' }, '어림한 주기'), pIn, h('span', { class: 'muted' }, '일')),
+              h('button', { class: 'primary', onclick: () => {
+                const v = +pIn.value;
+                if (!(v >= 1 && v <= 90)) { msg.innerHTML = ''; msg.append(h('div', { class: 'callout warn' }, '1일에서 90일 사이로 넣어 주세요.')); return; }
+                setP(v); redraw();
+              } }, '이 주기로 겹쳐 보기')),
+            msg));
+          return;
+        }
         if (gateOn()) {
           const nIn = h('input', { type: 'number', min: 1, step: 1, style: { width: '80px' } });
           const pIn = h('input', { type: 'number', min: 1, step: 0.1, style: { width: '90px' } });
