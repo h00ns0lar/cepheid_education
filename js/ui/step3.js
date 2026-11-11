@@ -116,7 +116,7 @@
           h('label', { class: 'chk' }, showAutoChk, h('span', { class: 'muted' }, '자동 설정 원 겹쳐 보기'))),
         manChecks);
       const manPanel = h('div', { class: 'manual' },
-        h('label', { class: 'chk', style: { fontWeight: 700 } }, manToggle, h('span', null, '🎯 직접 정해 보기 (+난이도)')),
+        h('label', { class: 'chk', style: { fontWeight: 700 } }, manToggle, h('span', null, '직접 정해 보기 (+난이도)')),
         autoLine, manBody);
 
       function updateMan() {
@@ -193,30 +193,30 @@
         const ys = okI.map((i) => mt.inst[i]);
         const yr = C.padRange(ys, 0.12);
         rawPlot.begin(0, C.SIM.NIGHTS + 1, yr[0], yr[1]);
-        rawPlot.scatter(okI.map((i) => t[i]), ys, { color: '#e8741c', err: okI.map((i) => mt.err[i]) });
-        rawPlot.vline(t[fi], { color: 'rgba(37,99,235,.35)', dash: [4, 3] });
+        rawPlot.scatter(okI.map((i) => t[i]), ys, { color: '#e07800', err: okI.map((i) => mt.err[i]) });
+        rawPlot.vline(t[fi], { color: 'rgba(18,40,76,.3)', dash: [4, 3] });
 
         const chosen = sel();
         const rr = chosen.length ? Math.max(0.15, Math.min(0.6, Math.max.apply(null, chosen.map((id) => Math.max.apply(null, ph.diag[id].res.map(Math.abs)))) * 1.1)) : 0.3;
         resPlot.begin(0, C.SIM.NIGHTS + 1, -rr, rr);
-        resPlot.line([0, 91], [0, 0], { color: '#9db0d6', w: 1 });
+        resPlot.line([0, 91], [0, 0], { color: '#c3cad6', w: 1 });
         chosen.forEach((id, k) => {
           const d = ph.diag[id];
           const pts = d.res.map((v, i) => i).filter((i) => mt.snr[i] >= 0 && ph.meas[id].snr[i] >= 5);
           resPlot.scatter(pts.map((i) => t[i]), pts.map((i) => d.res[i]), { color: COLORS[k % COLORS.length], r: 2.5 });
         });
-        if (!chosen.length) resPlot.text(45, 0, '비교성을 고르면 여기에 나타나요', { align: 'center', color: '#6b7da8', dy: -6 });
+        if (!chosen.length) resPlot.text(45, 0, '비교성을 고르면 여기에 나타나요', { align: 'center', color: '#5a6478', dy: -6 });
 
         if (chosen.length) {
           const lc = C.getLC(cur);
           const dr = C.padRange(lc.m, 0.12);
           diffPlot.begin(0, C.SIM.NIGHTS + 1, dr[0], dr[1]);
-          diffPlot.scatter(lc.t, lc.m, { color: '#12a36a', err: lc.err });
+          diffPlot.scatter(lc.t, lc.m, { color: '#0083c4', err: lc.err });
           const med = C.median(lc.err);
           diffNote.innerHTML = '측정 오차(중앙값) <b>' + med.toFixed(3) + ' 등급</b> · 사용한 점 ' + lc.t.length + '/' + N + (lc.nDropped ? ' (너무 어두워 찾지 못한 ' + lc.nDropped + '개 제외)' : '');
         } else {
           diffPlot.begin(0, C.SIM.NIGHTS + 1, 0, 1);
-          diffPlot.text(45, 0.5, '비교성을 2개 이상 고르면 차등측광 결과가 나타나요', { align: 'center', color: '#6b7da8' });
+          diffPlot.text(45, 0.5, '비교성을 2개 이상 고르면 차등측광 결과가 나타나요', { align: 'center', color: '#5a6478' });
           diffNote.textContent = '';
         }
       }
@@ -242,8 +242,8 @@
           !manual() && cur !== first ? h('div', { class: 'callout' }, '이 별은 자동으로 고른 비교성을 쓰고 있어요. 사진에서 별을 클릭하면 직접 바꿀 수 있어요.') : null,
           h('table', null, h('tr', null, h('th', null, '비교성'), h('th', null, '알려진 등급(카탈로그)'), h('th', null, '밝기 흔들림'), h('th', { style: { textAlign: 'left' } }, '점검 결과'), h('th')), rows));
         const bad = chosen.filter((id) => ph.diag[id].grade === 'bad');
-        if (bad.length) compBox.append(h('div', { class: 'callout bad' }, '⚠ ' + bad.join(', ') + ' 는 비교성으로 부적합해 보여요. 위 점검 결과를 보고 다른 별로 바꿔 보세요.'));
-        else if (chosen.length >= 2 && chosen.every((id) => ph.diag[id].grade === 'ok')) compBox.append(h('div', { class: 'callout good' }, '👍 좋은 비교성 조합이에요. 밤마다 비교성들이 같이 밝아지거나 어두워지니, 그만큼을 목표 별 값에서 빼 주면 됩니다.'));
+        if (bad.length) compBox.append(h('div', { class: 'callout bad' }, '' + bad.join(', ') + ' 는 비교성으로 부적합해 보여요. 위 점검 결과를 보고 다른 별로 바꿔 보세요.'));
+        else if (chosen.length >= 2 && chosen.every((id) => ph.diag[id].grade === 'ok')) compBox.append(h('div', { class: 'callout good' }, '좋은 비교성 조합이에요. 밤마다 비교성들이 같이 밝아지거나 어두워지니, 그만큼을 목표 별 값에서 빼 주면 됩니다.'));
       }
 
       function toggleComp(id) {

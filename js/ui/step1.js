@@ -193,8 +193,8 @@
   }
 
   function renderRoulette(root) {
-    const cv = h('canvas', { id: 'sil', width: CW, height: CH });
-    const btn = h('button', { class: 'primary big' }, '🎲 은하 뽑기');
+    const cv = h('canvas', { id: 'sil', width: CW, height: CH, 'data-cap': '' });
+    const btn = h('button', { class: 'primary big' }, '은하 뽑기');
     const mask = h('div', { class: 'roulette-mask' }, h('div', null,
       h('div', { class: 'lead', style: { color: '#e8ebf7' } }, '오늘 탐사할 은하를 뽑아 봅시다.'),
       h('small', null, '버튼을 누르면 은하가 하나 정해져요. 그 은하까지의 거리는 마지막에 공개됩니다.'),
@@ -218,7 +218,7 @@
   function renderField(root) {
     const S = C.S, R = C.world(), gal = R.field.galaxy;
     const vars = R.field.vars;
-    const cv = h('canvas', { id: 'sil', width: CW, height: CH });
+    const cv = h('canvas', { id: 'sil', width: CW, height: CH, 'data-cap': '은하의 대략적인 모습과 밝기가 변하는 별의 위치 (그림은 실제 사진이 아니에요)' });
     const list = h('div', { class: 'varlist' });
     const count = h('span', { class: 'tag gold' });
 
@@ -243,7 +243,7 @@
     refreshList();
 
     const selAll = h('button', { onclick: () => { vars.forEach((v) => { if (S.picked.indexOf(v.id) < 0) S.picked.push(v.id); }); S.picked.sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)); S.observed = false; S.comps = {}; S.batchDone = false; S.an = {}; R.frames = {}; R.phot = {}; R.lc = {}; R.an = {}; C.save(); refreshList(); C.refreshNav(); } }, '모두 선택');
-    // 🤔 먼저 예상해 보기: 이 은하까지 몇 광년쯤일까? (마지막에 실제 거리와 비교)
+    // 먼저 예상해 보기: 이 은하까지 몇 광년쯤일까? (마지막에 실제 거리와 비교)
     const guessIn = h('input', { type: 'range', min: 4, max: 9, step: 0.05, value: S.pred.dist0 ? Math.log10(S.pred.dist0) : 6.5 });
     const guessLbl = h('b', { style: { fontSize: '1.3rem' } });
     const guessTag = h('span', { class: 'tag' });
@@ -255,14 +255,14 @@
     guessIn.addEventListener('input', () => { S.pred.dist0 = Math.pow(10, +guessIn.value); C.save(); showGuess(); });
     showGuess();
     const predictCard = h('div', { class: 'panel predict', style: { marginTop: '16px' } },
-      h('h3', null, '🤔 먼저 예상해 보기'),
+      h('h3', null, '먼저 예상해 보기'),
       h('p', null, '이 은하까지 몇 광년쯤일까요? 감으로 골라 보세요. 마지막 단계에서 내가 잰 거리, 실제 거리와 나란히 비교해 드려요.'),
       h('div', { class: 'row' }, guessLbl, h('span', { class: 'spacer' }), guessTag),
       guessIn,
       h('div', { class: 'row muted', style: { fontSize: '.78rem', justifyContent: 'space-between' } }, ['1만', '10만', '100만', '1000만', '1억', '10억'].map((t) => h('span', null, t))),
       h('small', { class: 'muted' }, '참고: 우리 은하의 지름은 약 10만 광년이에요.'));
 
-    const redo = h('button', { class: 'ghost', onclick: () => C.ask('다른 은하를 다시 뽑을까요? 진행이 초기화됩니다.', () => { resetDownstream(); C.S.galaxyId = null; C.save(); C.go(1); }, '다시 뽑기') }, '🎲 다시 뽑기');
+    const redo = h('button', { class: 'ghost', onclick: () => C.ask('다른 은하를 다시 뽑을까요? 진행이 초기화됩니다.', () => { resetDownstream(); C.S.galaxyId = null; C.save(); C.go(1); }, '다시 뽑기') }, '다시 뽑기');
 
     root.append(
       h('h2', null, '1단계 · 변광성 찾기'),

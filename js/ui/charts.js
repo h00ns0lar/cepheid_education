@@ -66,7 +66,7 @@
 
   P.axes = function () {
     const ctx = this.ctx, m = this.o.m, r = this.range;
-    ctx.fillStyle = '#f6f9ff'; ctx.fillRect(0, 0, this.w, this.h);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, this.w, this.h);
     ctx.font = '11px sans-serif'; ctx.lineWidth = 1;
     let xt;
     if (this.o.xlog) {
@@ -76,7 +76,7 @@
       }
     } else xt = niceTicks(r.x0, r.x1, 7);
     const yt = niceTicks(r.y0, r.y1, 5);
-    ctx.strokeStyle = '#dde7f8'; ctx.fillStyle = '#6b7da8';
+    ctx.strokeStyle = '#e8ecf2'; ctx.fillStyle = '#5a6478';
     ctx.textAlign = 'center';
     xt.forEach((v) => {
       const x = this.X(v);
@@ -89,9 +89,9 @@
       ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(this.w - m.r, y); ctx.stroke();
       ctx.fillText(String(+v.toPrecision(4)), m.l - 6, y + 4);
     });
-    ctx.strokeStyle = '#9db0d6';
+    ctx.strokeStyle = '#c3cad6';
     ctx.strokeRect(m.l, m.t, this.w - m.l - m.r, this.h - m.t - m.b);
-    ctx.fillStyle = '#33456f'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#2b3445'; ctx.textAlign = 'center';
     ctx.fillText(this.o.xlabel, m.l + (this.w - m.l - m.r) / 2, this.h - 6);
     ctx.save(); ctx.translate(13, m.t + (this.h - m.t - m.b) / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillText(this.o.ylabel, 0, 0); ctx.restore();
@@ -109,7 +109,7 @@
     this.clip((ctx) => {
       xs.forEach((x, i) => {
         const px = this.X(x), py = this.Y(ys[i]);
-        const col = o.colors ? o.colors[i] : (o.color || '#2563eb');
+        const col = o.colors ? o.colors[i] : (o.color || '#12284c');
         if (o.err && o.err[i] != null) {
           ctx.strokeStyle = col; ctx.globalAlpha = 0.6;
           ctx.beginPath(); ctx.moveTo(px, this.Y(ys[i] - o.err[i])); ctx.lineTo(px, this.Y(ys[i] + o.err[i])); ctx.stroke();
@@ -117,7 +117,7 @@
         }
         ctx.fillStyle = col;
         ctx.beginPath(); ctx.arc(px, py, o.r || 3, 0, 6.2832); ctx.fill();
-        if (o.ring && o.ring[i]) { ctx.strokeStyle = '#172445'; ctx.beginPath(); ctx.arc(px, py, (o.r || 3) + 3, 0, 6.2832); ctx.stroke(); }
+        if (o.ring && o.ring[i]) { ctx.strokeStyle = '#1b2333'; ctx.beginPath(); ctx.arc(px, py, (o.r || 3) + 3, 0, 6.2832); ctx.stroke(); }
       });
     });
     return this;
@@ -126,7 +126,7 @@
   P.line = function (xs, ys, o) {
     o = o || {};
     this.clip((ctx) => {
-      ctx.strokeStyle = o.color || '#e8890c'; ctx.lineWidth = o.w || 1.6;
+      ctx.strokeStyle = o.color || '#e07800'; ctx.lineWidth = o.w || 1.6;
       if (o.dash) ctx.setLineDash(o.dash);
       ctx.beginPath();
       xs.forEach((x, i) => { const px = this.X(x), py = this.Y(ys[i]); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
@@ -138,7 +138,7 @@
   P.vline = function (x, o) {
     o = o || {};
     this.clip((ctx) => {
-      ctx.strokeStyle = o.color || '#e8890c'; ctx.lineWidth = o.w || 1;
+      ctx.strokeStyle = o.color || '#e07800'; ctx.lineWidth = o.w || 1;
       if (o.dash) ctx.setLineDash(o.dash);
       const px = this.X(x);
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, this.h); ctx.stroke(); ctx.setLineDash([]);
@@ -149,7 +149,7 @@
   P.text = function (x, y, s, o) {
     o = o || {};
     const ctx = this.ctx;
-    ctx.fillStyle = o.color || '#172445'; ctx.font = o.font || '12px sans-serif'; ctx.textAlign = o.align || 'left';
+    ctx.fillStyle = o.color || '#1b2333'; ctx.font = o.font || '12px sans-serif'; ctx.textAlign = o.align || 'left';
     ctx.fillText(s, this.X(x) + (o.dx || 0), this.Y(y) + (o.dy || 0));
     return this;
   };

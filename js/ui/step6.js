@@ -32,9 +32,10 @@
 
       // 별마다 포그슨 방정식으로 거리를 직접 구한다. 첫 별(V1)을 풀면 나머지는 컴퓨터에게 맡길 수 있다.
       // S.log.pog[id] = '직접' | '풀이' | '자동'  (예전 저장분의 S.log.pogson 은 첫 별 기록으로 옮긴다)
-      const pog = () => (S.log.pog = S.log.pog || (S.log.pogson ? { [rows[0].id]: S.log.pogson } : {}));
-      const calcDone = () => S.revealed || rows.every((r) => pog()[r.id]);
-      const HOW = { '직접': '✔', '풀이': '📖', '자동': '🤖' };
+      const pog = () => (S.log.pog = S.log.pog || {});
+      const calcDone = () => rows.every((r) => pog()[r.id]);
+      if (!calcDone()) S.revealed = false;   // 모든 별을 풀기 전에는 정답을 공개하지 않는다
+      const HOW = { '직접': '직접 ✓', '풀이': '풀이 봄', '자동': '자동' };
       let calcCur = null;
       function drawCalc() {
         const P = pog(), firstId = rows[0].id;
@@ -51,7 +52,7 @@
         if (P[f.id]) {
           body = h('div', null,
             h('div', { class: 'callout ' + (P[f.id] === '직접' ? 'good' : '') },
-              HOW[P[f.id]] + ' ' + f.id + ': μ = ' + mu.toFixed(2) + ', d = ' + dK.toFixed(1) + ' kpc (' + C.lyKo(dK * 1000 * 3.26156) + ')  ·  ' + (P[f.id] === '직접' ? '직접 풀었어요' : P[f.id] === '풀이' ? '풀이를 보고 넘어갔어요' : '컴퓨터가 계산했어요')),
+              f.id + ': μ = ' + mu.toFixed(2) + ', d = ' + dK.toFixed(1) + ' kpc (' + C.lyKo(dK * 1000 * 3.26156) + ')  ·  ' + (P[f.id] === '직접' ? '직접 풀었어요' : P[f.id] === '풀이' ? '풀이를 보고 넘어갔어요' : '컴퓨터가 계산했어요')),
             P[f.id] !== '직접' ? h('button', { class: 'sm', onclick: () => { delete P[f.id]; refresh(); } }, '직접 다시 풀어 보기') : null);
         } else {
           body = C.quiz([
@@ -70,7 +71,7 @@
           h('tr', null, h('th', null, '별'), h('th', null, 'm (4단계)'), h('th', null, 'M (5단계)'), h('th', null, '상태')),
           rows.map((r) => h('tr', { class: 'clickable' + (r.id === calcCur ? ' sel' : ''), onclick: () => { calcCur = r.id; drawCalc(); } },
             h('td', null, h('b', null, r.id)), h('td', { class: 'mono' }, r.m.toFixed(2)), h('td', { class: 'mono' }, (rel.a * (r.logP - 1) + rel.b).toFixed(2)),
-            h('td', null, P[r.id] ? HOW[P[r.id]] + ' ' + P[r.id] : '풀기 전'))));
+            h('td', null, HOW[P[r.id]] || '풀기 전'))));
 
         calcBox.append(
           h('div', { class: 'formula' }, 'm − M = 5 log', h('sub', null, '10'), '(d / 10 pc)', h('br'), h('small', { class: 'muted' }, '⇔  d = 10', h('sup', null, '(m − M + 5)/5'), ' pc')),
@@ -80,10 +81,11 @@
             h('div', null,
               h('div', { class: 'formula', style: { fontSize: '1.1rem' } }, h('b', null, f.id), ':  μ = ', h('span', { class: 'hl' }, m.toFixed(2)), ' − (', h('span', { class: 'hl' }, M.toFixed(2)), ')'),
               body)),
-          h('div', { class: 'row', style: { marginTop: '12px' } },
-            h('button', { class: 'primary', disabled: !firstDone || !nLeft, onclick: () => { rows.forEach((r) => { if (!P[r.id]) P[r.id] = '자동'; }); refresh(); } }, (firstDone ? '' : '🔒 ') + '나머지 별 자동으로 계산하기'),
-            h('small', { class: 'muted' }, !firstDone ? '먼저 ' + firstId + '을 직접 풀어 보세요. 풀면 자동 계산 버튼이 열려요.'
-              : nLeft ? '🔓 남은 ' + nLeft + '개 별은 직접 풀어도 되고, 컴퓨터에게 맡겨도 돼요.' : '모든 별의 거리를 구했어요!')));
+          h('div', { class: 'auto-row' },
+            h('span', { class: 'muted' }, '자동 계산:'),
+            h('button', { class: 'sm', disabled: !firstDone || !nLeft, onclick: () => { rows.forEach((r) => { if (!P[r.id]) P[r.id] = '자동'; }); refresh(); } }, '나머지 별 자동으로 계산하기'),
+            h('small', { class: 'muted' }, !firstDone ? firstId + '을 직접 풀면 열려요.'
+              : nLeft ? '남은 ' + nLeft + '개 별은 직접 풀어도 되고, 컴퓨터에게 맡겨도 돼요.' : '모든 별의 거리를 구했어요.')));
       }
 
       function drawResult() {
@@ -91,7 +93,7 @@
         box.innerHTML = '';
         if (!calcDone()) {
           const done = rows.filter((x) => pog()[x.id]).length;
-          box.append(h('div', { class: 'panel locked-note' }, '🔒 모든 세페이드의 거리를 구하면(직접 또는 자동) 평균 거리를 계산해 줘요. (' + done + ' / ' + rows.length + ' 완료)'));
+          box.append(h('div', { class: 'panel locked-note' }, '모든 세페이드의 거리를 구하면(직접 또는 자동) 평균 거리를 계산해 줘요. (' + done + ' / ' + rows.length + ' 완료)'));
           chal.refresh();
           return;
         }
@@ -101,19 +103,19 @@
           h('tr', null, h('th', null, '별'), h('th', null, 'P (일)'), h('th', null, 'm'), h('th', null, 'M'), h('th', null, 'μ = m − M' + (S.ext ? ' − A_V' : '')), h('th', null, '거리 d')),
           r.list.map((x) => h('tr', null, h('td', null, x.id), h('td', { class: 'mono' }, x.P.toFixed(2)), h('td', { class: 'mono' }, x.m.toFixed(2)), h('td', { class: 'mono' }, x.M.toFixed(2)), h('td', { class: 'mono' }, x.mu.toFixed(2)), h('td', { class: 'mono' }, C.distFmt(x.d)))));
         const extChk = h('input', { type: 'checkbox', checked: S.ext, disabled: S.pred.ext === undefined, onchange: (e) => { S.ext = e.target.checked; S.revealed = false; C.save(); drawResult(); C.refreshNav(); } });
-        // 🤔 먼지 보정을 하면 거리는 어떻게 될까? 먼저 예상한 뒤에 체크할 수 있다
+        // 먼지 보정을 하면 거리는 어떻게 될까? 먼저 예상한 뒤에 체크할 수 있다
         const muNo = rows.reduce((a, x) => a + x.m - (rel.a * (x.logP - 1) + rel.b), 0) / rows.length;
         const change = (C.distFromMu(muNo - gal.Av) / C.distFromMu(muNo) - 1) * 100;
         const EXT = { far: '멀어진다', near: '가까워진다', same: '그대로' };
         const extPred = S.pred.ext === undefined
           ? h('div', { class: 'predict-box', style: { marginTop: '12px' } },
-            h('b', null, '🤔 먼저 예상해 보기: 먼지 보정을 하면 거리는 어떻게 될까요?'),
+            h('b', null, '먼저 예상해 보기: 먼지 보정을 하면 거리는 어떻게 될까요?'),
             h('div', { class: 'chips', style: { marginTop: '8px' } },
               Object.keys(EXT).map((k) => h('div', { class: 'chip', onclick: () => { S.pred.ext = k; C.save(); drawResult(); } }, EXT[k]))),
             h('small', { class: 'muted' }, '예상을 고르면 아래 체크박스가 열려요.'))
           : S.ext
             ? h('div', { class: 'callout ' + (S.pred.ext === 'near' ? 'good' : 'warn') },
-              (S.pred.ext === 'near' ? '🎉 맞아요! ' : '내 예상은 "' + EXT[S.pred.ext] + '"였지만, ') + '먼지 보정을 하니 거리가 ' + Math.abs(change).toFixed(1) + '% 가까워졌어요. 먼지에 가려 어둡게 보이던 만큼(m이 커진 만큼)을 빼 주니, 별이 원래 밝기로 돌아와 더 가깝게 계산된 거예요.')
+              (S.pred.ext === 'near' ? '맞아요! ' : '내 예상은 "' + EXT[S.pred.ext] + '"였지만, ') + '먼지 보정을 하니 거리가 ' + Math.abs(change).toFixed(1) + '% 가까워졌어요. 먼지에 가려 어둡게 보이던 만큼(m이 커진 만큼)을 빼 주니, 별이 원래 밝기로 돌아와 더 가깝게 계산된 거예요.')
             : h('div', { class: 'callout' }, '내 예상: "' + EXT[S.pred.ext] + '". 이제 체크박스를 켜서 확인해 보세요.');
         box.append(
           h('div', { class: 'panel' },
@@ -132,15 +134,16 @@
               h('div', { style: { margin: '14px 0' } },
                 h('div', { class: 'result-big' }, C.lyKo(r.d * 3.26156)),
                 h('div', { class: 'muted' }, '(' + C.pcFmt(r.d) + ') · ± ' + C.distFmt(r.dErr) + ' 계산 오차 범위')),
-              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; C.save(); drawResult(); C.refreshNav(); } }, '🎯 정답 확인하기'))));
+              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; C.save(); drawResult(); C.refreshNav(); } }, '정답 확인하기'))));
         // 차트
         const xr = [0.3, 1.7], yr = C.padRange(r.list.map((x) => x.mu).concat([r.mean - 0.5, r.mean + 0.5]), 0.1);
         pl.begin(xr[0], xr[1], yr[0], yr[1]);
-        pl.line(xr, [r.mean, r.mean], { color: '#e8890c', dash: [6, 4] });
-        pl.scatter(r.list.map((x) => x.logP), r.list.map((x) => x.mu), { color: '#12a36a', r: 4.5 });
-        r.list.forEach((x) => pl.text(x.logP, x.mu, x.id, { dx: 7, dy: -6, color: '#33456f', font: '11px sans-serif' }));
+        pl.line(xr, [r.mean, r.mean], { color: '#e07800', dash: [6, 4] });
+        pl.scatter(r.list.map((x) => x.logP), r.list.map((x) => x.mu), { color: '#0083c4', r: 4.5 });
+        r.list.forEach((x) => pl.text(x.logP, x.mu, x.id, { dx: 7, dy: -6, color: '#2b3445', font: '11px sans-serif' }));
 
         if (S.revealed) drawReveal(r);
+        C.figurize(root);
         chal.refresh();
       }
 
@@ -160,7 +163,7 @@
         const periodOK = C.cepheidRows().filter((x) => Math.abs(x.P / C.varById(x.id).P - 1) < 0.04).length;
         const good = Math.abs(err) < 10;
         box.append(h('div', { class: 'panel', style: { marginTop: '16px', borderColor: good ? 'var(--green)' : 'var(--accent)' } },
-          h('h2', null, '🎉 정답 공개: ' + gal.short + '까지의 거리'),
+          h('h2', null, '정답 공개: ' + gal.short + '까지의 거리'),
           h('div', { class: 'grid cols-3' },
             h('div', { class: 'kpi' }, h('div', null, h('div', { class: 'v' }, C.distFmt(dTrue)), h('div', { class: 'l' }, '실제 거리 (교육용 기준값)'))),
             h('div', { class: 'kpi' }, h('div', null, h('div', { class: 'v' }, C.distFmt(r.d)), h('div', { class: 'l' }, '내가 잰 거리 (' + (S.ext ? '먼지 보정함' : '먼지 보정 안 함') + ')'))),
@@ -172,11 +175,11 @@
           myRecord(r, dTrue),
           h('p', { class: 'muted' }, gal.fact),
           h('div', { class: 'row' },
-            h('button', { onclick: () => window.print() }, '🖨 결과 인쇄 / PDF 저장'),
-            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.save(); C.go(1); }, '도전') }, '🎲 다른 은하에 도전'))));
+            h('button', { onclick: () => window.print() }, '결과 인쇄 / PDF 저장'),
+            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
       }
 
-      // 📒 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것 (점수는 매기지 않는다)
+      // 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것 (점수는 매기지 않는다)
       function myRecord(r, dTrue) {
         const LY = 3.26156, first = S.picked[0], P = S.pred;
         const an = S.picked.map((id) => S.an[id] || {});
@@ -197,7 +200,7 @@
           ['힌트 사용', (S.log.hints || 0) + '번']
         ];
         return h('div', { class: 'record' },
-          h('h3', null, '📒 내 기록'),
+          h('h3', null, '내 기록'),
           h('table', null, rowsR.map(([k, v]) => h('tr', null, h('td', null, k), h('td', null, v)))),
           h('small', { class: 'muted' }, '다른 은하에 도전할 때는 더 많은 별을 직접 풀어 보세요.'));
       }

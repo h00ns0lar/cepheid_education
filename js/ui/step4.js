@@ -36,11 +36,12 @@
       const v1Done = () => !!(S.an[first] && S.an[first].P && S.an[first].type);
       const guessed = () => S.pred.p1 !== undefined;
       const gateOn = () => cur === first && !guessed() && !(S.an[first] && S.an[first].P);
-      // V1은 학생이 고르기 전까지 자기 어림값(건너뛰면 5일)으로 겹쳐 놓는다. 다른 별은 컴퓨터가 찾은 값으로 시작.
+      // 주기는 미리 풀어 두지 않는다. V1은 학생의 어림값(건너뛰면 5일), 다른 별은 임시 10일로 겹쳐 놓고 시작한다.
+      const hasP = (id) => !!(S.an[id] && S.an[id].P);
       const curP = () => {
-        if (S.an[cur] && S.an[cur].P) return S.an[cur].P;
+        if (hasP(cur)) return S.an[cur].P;
         if (cur === first) return S.pred.p1 > 0 ? S.pred.p1 : 5;
-        return autoOf().P;
+        return 10;
       };
 
       function setP(P, keep) {
@@ -56,7 +57,7 @@
         ids.forEach((id) => {
           const ty = typeOf(id);
           chips.append(h('div', { class: 'chip' + (id === cur ? ' cur' : ''), onclick: () => { cur = id; Pc = null; redraw(); if (chal) chal.reset(); } },
-            id, h('span', { class: 's' }, ty === 'cepheid' ? '🟢세페이드' : ty === 'eb' ? '⚪식쌍성' : S.an[id] ? '…' : '')));
+            id, h('span', { class: 's' }, ty === 'cepheid' ? '세페이드' : ty === 'eb' ? '식쌍성' : S.an[id] ? '…' : '')));
         });
       }
 
@@ -70,7 +71,7 @@
           const msg = h('div');
           nIn.addEventListener('input', () => { const n = +nIn.value; if (n > 0) pIn.value = (C.SIM.NIGHTS / n).toFixed(1); });
           gateBox.append(h('div', { class: 'gate-card' },
-            h('b', null, '🔎 먼저 어림해 보기'),
+            h('b', null, '먼저 어림해 보기'),
             h('p', null, '위 그래프에서 이 별(' + first + ')이 가장 밝아지는 때(점이 위로 몰린 곳)가 90일 동안 몇 번 있나요? 그 횟수로 90일을 나누면 주기를 어림할 수 있어요. 어림해야 아래 주기도와 위상 중첩이 열려요.'),
             h('div', { class: 'row' },
               h('label', { class: 'kv' }, h('span', { class: 'muted' }, '밝아진 횟수'), nIn, h('span', { class: 'muted' }, '번 →')),
@@ -104,18 +105,18 @@
           '주기는 대략 ' + Math.floor(P * 0.9) + '~' + Math.ceil(P * 1.1) + '일 사이예요.'
         ];
         hintBox.append(h('div', { class: 'hint-box' },
-          hints.slice(0, n).map((t, i) => h('div', null, '💡 힌트 ' + (i + 1) + ': ' + t)),
-          n < 3 ? h('button', { class: 'sm', onclick: () => { S.log.hints = n + 1; C.save(); drawHints(); } }, n ? '다음 힌트 보기 (' + (n + 1) + '/3)' : '💡 막히면 힌트 보기 (1/3)') : null));
+          hints.slice(0, n).map((t, i) => h('div', null, '힌트 ' + (i + 1) + ': ' + t)),
+          n < 3 ? h('button', { class: 'sm', onclick: () => { S.log.hints = n + 1; C.save(); drawHints(); } }, n ? '다음 힌트 보기 (' + (n + 1) + '/3)' : '막히면 힌트 보기 (1/3)') : null));
       }
 
       // ---------- 자동 버튼 잠금 ----------
       function drawLocks() {
         const ok = v1Done();
         btnAll.disabled = !ok; btnSuggest.disabled = !ok;
-        btnAll.textContent = (ok ? '' : '🔒 ') + '나머지 별 주기 자동으로 찾기';
-        btnSuggest.textContent = (ok ? '' : '🔒 ') + '나머지 모양 보고 자동 분류';
+        btnAll.textContent = '나머지 별 주기 자동으로 찾기';
+        btnSuggest.textContent = '나머지 모양 보고 자동 분류';
         btnBest.style.display = cur === first && !ok ? 'none' : '';
-        lockNote.textContent = ok ? '🔓 ' + first + '을 직접 끝냈어요. 이제 나머지는 컴퓨터에게 맡길 수 있어요.' : first + '의 주기와 종류를 직접 정하면 자동 버튼이 열려요.';
+        lockNote.textContent = ok ? '' + first + '을 직접 끝냈어요. 이제 나머지는 컴퓨터에게 맡길 수 있어요.' : first + '의 주기와 종류를 직접 정하면 자동 버튼이 열려요.';
         lockArea.className = gateOn() ? 'locked-area' : '';
       }
 
@@ -134,19 +135,19 @@
         // 시계열
         const yr = C.padRange(lc.m, 0.15);
         timePlot.begin(0, C.SIM.NIGHTS + 1, yr[0], yr[1]);
-        timePlot.scatter(lc.t, lc.m, { color: '#12a36a', err: lc.err });
+        timePlot.scatter(lc.t, lc.m, { color: '#0083c4', err: lc.err });
 
         // LS
         const pg = au.pg;
         lsPlot.begin(1.5, 60, 0, Math.min(1, Math.max.apply(null, pg.power) * 1.15));
-        lsPlot.line(pg.periods, pg.power, { color: '#2563eb', w: 1.4 });
+        lsPlot.line(pg.periods, pg.power, { color: '#12284c', w: 1.4 });
         pg.peaks.slice(0, 5).forEach((pk, i) => {
           const x = lsPlot.X(pk.period), y = lsPlot.Y(pk.power);
-          lsPlot.ctx.fillStyle = '#2563eb'; lsPlot.ctx.beginPath(); lsPlot.ctx.arc(x, y, 4, 0, 6.2832); lsPlot.ctx.fill();
-          lsPlot.ctx.fillStyle = '#172445'; lsPlot.ctx.font = 'bold 12px sans-serif'; lsPlot.ctx.textAlign = 'center';
+          lsPlot.ctx.fillStyle = '#12284c'; lsPlot.ctx.beginPath(); lsPlot.ctx.arc(x, y, 4, 0, 6.2832); lsPlot.ctx.fill();
+          lsPlot.ctx.fillStyle = '#1b2333'; lsPlot.ctx.font = 'bold 12px sans-serif'; lsPlot.ctx.textAlign = 'center';
           lsPlot.ctx.fillText(String(i + 1), x, y - 8);
         });
-        lsPlot.vline(P, { color: '#e8890c', dash: [5, 4], w: 1.5 });
+        lsPlot.vline(P, { color: '#e07800', dash: [5, 4], w: 1.5 });
         lsNote.innerHTML = '가장 높은 봉우리(피크)부터 1, 2, 3… 번호가 붙어 있어요. 주황 점선이 지금 쓰는 주기 <b>' + P.toFixed(2) + '일</b>이에요. 봉우리를 클릭하면 그 주기로 바뀝니다.';
 
         // 위상 중첩
@@ -157,8 +158,8 @@
         for (let i = 0; i <= 200; i++) { const x = i / 100; cx.push(x); cy.push(fit.model((x + fit.phase0) * P)); }
         const fr = C.padRange(lc.m.concat(cy), 0.1);
         foldPlot.begin(0, 2, fr[0], fr[1]);
-        foldPlot.scatter(xs, ys, { color: '#12a36a', err: es, r: 3 });
-        foldPlot.line(cx, cy, { color: '#e8890c', w: 2 });
+        foldPlot.scatter(xs, ys, { color: '#0083c4', err: es, r: 3 });
+        foldPlot.line(cx, cy, { color: '#e07800', w: 2 });
 
         const good = disp < 0.12 ? 'ok' : disp < 0.35 ? 'warn' : 'bad';
         kpi.innerHTML = '';
@@ -172,8 +173,10 @@
         // 모양 단서: V1은 종류를 직접 고른 뒤에 확인용으로 보여 준다
         const sm = C.shapeMetrics(fit), sug = C.suggestType(fit), ty = typeOf(cur);
         shapeBox.innerHTML = '';
-        if (cur === first && !ty) {
-          shapeBox.append(h('div', { class: 'callout' }, '🤔 위상 중첩 곡선의 모양을 보고 이 별이 세페이드인지 직접 골라 보세요. 고르면 컴퓨터의 판정과 비교해 드려요. (세페이드는 빨리 밝아지고 천천히 어두워지는 톱니 모양, 식쌍성은 좌우 대칭으로 뾰족하게 어두워져요)'));
+        if (!hasP(cur)) {
+          shapeBox.append(h('div', { class: 'callout' }, '아직 이 별의 주기를 정하지 않았어요 (지금은 임시로 ' + P.toFixed(1) + '일로 겹쳐 놓았어요). 주기도의 봉우리를 누르거나 숫자를 넣어 주기를 정하면 곡선 모양 단서와 분류 버튼이 나와요.'));
+        } else if (cur === first && !ty) {
+          shapeBox.append(h('div', { class: 'callout' }, '위상 중첩 곡선의 모양을 보고 이 별이 세페이드인지 직접 골라 보세요. 고르면 컴퓨터의 판정과 비교해 드려요. (세페이드는 빨리 밝아지고 천천히 어두워지는 톱니 모양, 식쌍성은 좌우 대칭으로 뾰족하게 어두워져요)'));
         } else {
           shapeBox.append(h('div', { class: 'callout' },
             h('b', null, '모양 단서: '),
@@ -185,18 +188,18 @@
 
         // 분류 버튼
         classBox.innerHTML = '';
-        classBox.append(h('div', { class: 'row' },
+        if (hasP(cur)) classBox.append(h('div', { class: 'row' },
           h('b', null, '이 별은?'),
-          h('button', { class: ty === 'cepheid' ? 'on' : '', onclick: () => classify('cepheid') }, '🟢 세페이드 변광성'),
-          h('button', { class: ty === 'eb' ? 'on' : '', onclick: () => classify('eb') }, '⚪ 세페이드가 아님 (식쌍성 등)')));
+          h('button', { class: ty === 'cepheid' ? 'on' : '', onclick: () => classify('cepheid') }, '세페이드 변광성'),
+          h('button', { class: ty === 'eb' ? 'on' : '', onclick: () => classify('eb') }, '세페이드가 아님 (식쌍성 등)')));
         if (ty && ty !== sug) classBox.append(h('div', { class: 'callout warn', style: { marginTop: '8px' } }, '곡선 모양이 다른 쪽에 가깝게 보여요. 위상 중첩 곡선을 다시 살펴보세요.'));
-        else if (ty && cur === first) classBox.append(h('div', { class: 'callout good', style: { marginTop: '8px' } }, '👍 컴퓨터의 판정과 같아요! ' + (good === 'ok' ? '주기도 잘 맞아요.' : '그런데 점들이 아직 흩어져 있어요. 주기를 조금 더 다듬어 보세요.')));
+        else if (ty && cur === first) classBox.append(h('div', { class: 'callout good', style: { marginTop: '8px' } }, '컴퓨터의 판정과 같아요! ' + (good === 'ok' ? '주기도 잘 맞아요.' : '그런데 점들이 아직 흩어져 있어요. 주기를 조금 더 다듬어 보세요.')));
       }
 
       function classify(type) {
         const prev = S.an[cur] || {};
         const P = curP();
-        S.an[cur] = Object.assign({}, prev, { P, type, howType: '직접', howP: prev.howP || (cur === first ? '직접' : '자동') });
+        S.an[cur] = Object.assign({}, prev, { P, type, howType: '직접', howP: prev.howP || '직접' });
         S.plFit = false; S.revealed = false;
         C.save(); redraw(); C.refreshNav();
       }
@@ -217,7 +220,7 @@
       const btnHalf = h('button', { onclick: () => { setP(curP() / 2); redraw(); } }, 'P ÷ 2');
       const btnDbl = h('button', { onclick: () => { setP(curP() * 2); redraw(); } }, 'P × 2');
       // 자동 버튼: V1을 직접 끝낸 뒤에만, 직접 정한 값은 건드리지 않는다
-      const btnAll = h('button', { class: 'primary', onclick: () => {
+      const btnAll = h('button', { class: 'sm', onclick: () => {
         ids.forEach((id) => {
           const prev = S.an[id] || {};
           if (prev.howP === '직접') return;
@@ -225,7 +228,7 @@
         });
         S.log.autoP = true; S.plFit = false; C.save(); redraw();
       } }, '나머지 별 주기 자동으로 찾기');
-      const btnSuggest = h('button', { onclick: () => {
+      const btnSuggest = h('button', { class: 'sm', onclick: () => {
         ids.forEach((id) => {
           const prev = S.an[id] || {};
           if (prev.type) return;
@@ -246,13 +249,13 @@
             h('div', { class: 'row', style: { margin: '8px 0' } }, h('span', { class: 'muted' }, '주기를 조금씩 바꾸기'), slider, pnum, h('span', { class: 'muted' }, '일')),
             h('div', { class: 'row' }, btnBest, btnHalf, btnDbl),
             hintBox)),
-        h('div', { class: 'panel', style: { marginTop: '20px' } }, kpi, shapeBox, classBox));
+        h('div', { class: 'panel', style: { marginTop: '20px' } }, kpi, shapeBox, classBox,
+          h('div', { class: 'auto-row' }, h('span', { class: 'muted' }, '자동 계산:'), btnAll, btnSuggest, lockNote)));
 
       root.append(
         h('h2', null, '4단계 · 시간에 따른 밝기 분석(시계열분석): 주기 찾기'),
         h('p', { class: 'lead' }, '3단계에서 얻은 "시간에 따른 밝기 그래프"(광도곡선)에서 밝기가 되풀이되는 주기를 찾아요. 첫 별 ' + first + '은 직접 풀어 보고, 끝내면 나머지는 컴퓨터에게 맡길 수 있어요.'),
-        h('div', { class: 'row', style: { marginBottom: '6px' } }, chips, h('span', { class: 'spacer' }), btnAll, btnSuggest),
-        h('div', { style: { textAlign: 'right', marginBottom: '12px' } }, lockNote),
+        h('div', { class: 'row', style: { marginBottom: '16px' } }, chips),
         h('div', { class: 'panel', style: { marginBottom: '20px' } },
           h('h3', null, '① 광도곡선 (시간에 따른 밝기)'), cvTime, gateBox),
         lockArea,

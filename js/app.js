@@ -109,9 +109,28 @@
     // "3단계 · 제목" 을 작은 "STEP 3 / 6" 표시와 큰 제목으로 나눈다
     const title = stage.querySelector('h2');
     const m = title && /^(\d)단계 · (.+)$/.exec(title.textContent);
-    if (m) { title.textContent = m[2]; stage.insertBefore(h('div', { class: 'eyebrow' }, 'STEP ' + m[1] + ' / 6'), title); }
+    if (m) { title.textContent = m[2]; stage.insertBefore(h('div', { class: 'eyebrow' }, '제' + m[1] + '단계'), title); }
+    C.figurize(stage);
     C.refreshNav();
     window.scrollTo(0, 0);
+  };
+
+  // 교과서처럼 그래프와 사진에 "그림 3-1." 같은 번호와 설명을 붙인다.
+  // 설명은 data-cap → 바로 위의 짧은 회색 안내문 → 칸의 소제목 순서로 고른다. 다시 그려진 그래프에도 쓸 수 있게 번호는 매번 새로 매긴다.
+  C.figurize = function (root) {
+    root.querySelectorAll('canvas.plot, canvas.view, #sil').forEach((cv) => {
+      const target = cv.closest('.sil-wrap') || cv;
+      if (target.closest('figure') || cv.closest('.chal-zone')) return;
+      let cap = cv.dataset.cap;
+      if (cap === '') return;
+      const prev = target.previousElementSibling;
+      if (!cap && prev && prev.tagName === 'DIV' && prev.classList.contains('muted') && prev.textContent.length < 70) { cap = prev.textContent; prev.remove(); }
+      if (!cap) { const panel = target.closest('.panel'); const h3 = panel && panel.querySelector('h3'); cap = h3 ? h3.textContent.replace(/^[①-⑩]\s*/, '') : ''; }
+      const fig = h('figure', { class: 'fig' });
+      target.parentNode.insertBefore(fig, target);
+      fig.append(target, h('figcaption', null, h('b', { class: 'fig-n' }), cap));
+    });
+    root.querySelectorAll('figure.fig .fig-n').forEach((b, i) => { b.textContent = '그림 ' + C.S.step + '-' + (i + 1) + '. '; });
   };
 
   C.refreshNav = function () {
@@ -128,7 +147,7 @@
     const done = [1, 2, 3, 4, 5, 6].filter((k) => C.isDone(k)).length;
     C.$('#ring').style.setProperty('--p', String(Math.round((done / 6) * 100)));
     C.$('#ring-n').textContent = done + '/6';
-    C.$('#ring-sub').textContent = done === 6 ? '모두 끝냈어요! 🎉' : C.STEP_NAMES[S.step - 1] + ' 단계 진행 중';
+    C.$('#ring-sub').textContent = done === 6 ? '모든 단계를 끝냈어요' : C.STEP_NAMES[S.step - 1] + ' 진행 중';
     C.$('#btn-prev').disabled = S.step <= 1;
     const nxt = C.$('#btn-next');
     nxt.style.visibility = S.step >= 6 ? 'hidden' : 'visible';

@@ -36,7 +36,7 @@
         thumbs.appendChild(cell);
       });
       const log = h('div', { class: 'muted', style: { fontSize: '.85rem', maxHeight: '110px', overflow: 'auto' } });
-      const startBtn = h('button', { class: 'primary big' }, '🔭 촬영 시작');
+      const startBtn = h('button', { class: 'primary big' }, '촬영 시작');
       const stat = h('div');
 
       function paintCell(i, status, now) {
@@ -103,7 +103,7 @@
             ei++;
           } else if (n.status === 'cloud') {
             paintCell(d, 'cloud', true);
-            status.textContent = 'Day ' + n.day + ' · ☁ 구름 때문에 관측 불가';
+            status.textContent = 'Day ' + n.day + ' · 구름 때문에 관측 불가';
           } else {
             paintCell(d, 'off', true);
             status.textContent = 'Day ' + n.day + ' · 망원경을 쓸 수 없는 밤';
@@ -124,9 +124,9 @@
             status,
             h('div', { style: { margin: '12px 0 6px' } }, timeline),
             h('div', { class: 'legend' },
-              h('span', null, h('i', { style: { background: 'var(--green)' } }), '촬영 성공'),
-              h('span', null, h('i', { style: { background: '#9fb0d4' } }), '구름'),
-              h('span', null, h('i', { style: { background: '#f1f5fc', border: '1px solid #e0e9f8' } }), '망원경을 못 쓴 밤')),
+              h('span', null, h('i', { style: { background: 'var(--cyan)' } }), '촬영 성공'),
+              h('span', null, h('i', { style: { background: '#9aa5b8' } }), '구름'),
+              h('span', null, h('i', { style: { background: '#f0f3f7', border: '1px solid #dfe4eb' } }), '망원경을 못 쓴 밤')),
             h('div', { style: { marginTop: '12px' } }, stat)),
           h('div', { class: 'panel' },
             h('h3', null, '방금 찍은 사진'),

@@ -23,7 +23,7 @@
     return d;
   };
   C.chalZone = (items) => h('section', { class: 'chal-zone' },
-    h('h3', null, '⭐ 도전 과제 (+난이도)'),
+    h('h3', null, '도전 과제 (+난이도)'),
     h('p', { class: 'muted' }, '위에서 컴퓨터가 자동으로 해 준 계산을, 이번엔 직접 계산식을 써서 해 보고 스스로 채점해 보는 선택 과제예요. 건너뛰어도 다음 단계로 갈 수 있어요.'),
     items);
 
@@ -136,9 +136,9 @@
       const plot = new C.Plot(cv, { xlabel: 'log P (P: 일)', ylabel: '겉보기등급 ⟨m⟩', invertY: true });
       const yr = C.padRange(ys, 0.15);
       plot.begin(0.3, 1.7, yr[0], yr[1]);
-      plot.line([0.3, 1.7], [lr.intercept + lr.slope * 0.3, lr.intercept + lr.slope * 1.7], { color: '#e8890c', dash: [6, 4] });
-      plot.scatter(xs, ys, { color: '#12a36a', r: 4.5 });
-      use.forEach((r) => plot.text(r.logP, r.m, r.id, { dx: 7, dy: -6, color: '#33456f', font: '11px sans-serif' }));
+      plot.line([0.3, 1.7], [lr.intercept + lr.slope * 0.3, lr.intercept + lr.slope * 1.7], { color: '#e07800', dash: [6, 4] });
+      plot.scatter(xs, ys, { color: '#0083c4', r: 4.5 });
+      use.forEach((r) => plot.text(r.logP, r.m, r.id, { dx: 7, dy: -6, color: '#2b3445', font: '11px sans-serif' }));
       const close = Math.abs(lr.slope - lit.a) < 0.7;
       body.append(
         kpi([[fx(lr.slope) + ' ± ' + fx(lr.sigSlope), '이 은하에서 구한 기울기 (log P가 1 늘 때 등급 변화)'], [fx(lr.rms), '직선에서 흩어진 정도 (등급)'], [String(use.length), '쓰는 세페이드 수']]),
@@ -195,8 +195,8 @@
               cvA);
             const pl = new C.Plot(cvA, { xlabel: 'log P', ylabel: '절대등급 M_V', invertY: true });
             pl.begin(0.3, 1.7, -7.2, -2);
-            pl.line([0.3, 1.7], [rel.a * (0.3 - 1) + rel.b, rel.a * (1.7 - 1) + rel.b], { color: '#e8890c', w: 2 });
-            pl.scatter(cr.map((c) => c.logP), cr.map((c) => c.M), { color: '#d6469a', r: 4.5 });
+            pl.line([0.3, 1.7], [rel.a * (0.3 - 1) + rel.b, rel.a * (1.7 - 1) + rel.b], { color: '#e07800', w: 2 });
+            pl.scatter(cr.map((c) => c.logP), cr.map((c) => c.M), { color: '#d6336c', r: 4.5 });
             out.append(
               h('div', { class: 'formula' }, '내가 만든 식: M', h('sub', null, 'V'), ' = ', h('span', { class: 'hl' }, fx(rel.a)), ' (log P − 1) ', rel.b < 0 ? '− ' : '+ ', h('span', { class: 'hl' }, fx(Math.abs(rel.b)))),
               note('good', '문헌의 식(' + fx(lit.a) + ', ' + fx(lit.b) + ')과 거의 같아요! 거리를 아는 세페이드들로 이렇게 기준값을 만들고, 그 식을 먼 은하의 세페이드에 적용하는 거예요. 별이 많을수록 식이 더 믿을 만해져요.'));

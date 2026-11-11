@@ -43,9 +43,8 @@
 
       // 별마다 식에 주기를 대입해 절대등급과 광도를 직접 구한다. 첫 별을 풀면 나머지는 컴퓨터에게 맡길 수 있다.
       // S.log.pl[id] = '직접' | '풀이' | '자동'
-      const HOW = { '직접': '✔ 직접', '풀이': '📖 풀이', '자동': '🤖 자동' };
+      const HOW = { '직접': '직접 ✓', '풀이': '풀이 봄', '자동': '자동' };
       const pl = () => (S.log.pl = S.log.pl || {});
-      if (S.plFit && !Object.keys(pl()).length) inc().forEach((r) => { pl()[r.id] = '자동'; });   // 예전 저장분
       const sync = () => { S.plFit = inc().length > 0 && inc().every((r) => pl()[r.id]); if (!S.plFit) S.revealed = false; C.save(); C.refreshNav(); };
       const vals = (r) => {
         const P2 = +r.P.toFixed(2), lp = Math.log10(P2), M = rel.a * (lp - 1) + rel.b;
@@ -71,7 +70,7 @@
           h('p', { class: 'muted', style: { marginTop: '8px' } }, '주기가 긴 세페이드일수록 훨씬 밝아요 — 태양의 수천~수만 배. 그래서 멀리서도 보입니다. "사용" 칸에서 이상해 보이는 별은 뺄 수 있어요.'));
       }
 
-      // 🤔 먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은?
+      // 먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은?
       const brightest = () => inc().reduce((a, r) => (r.P > a.P ? r : a));
       function drawPredict() {
         predBox.innerHTML = '';
@@ -81,7 +80,7 @@
         if (!S.plFit) {
           if (pick !== undefined) return;
           predBox.append(h('div', { class: 'predict-box' },
-            h('b', null, '🤔 먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은 어느 것일까요?'),
+            h('b', null, '먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은 어느 것일까요?'),
             h('p', { class: 'muted', style: { margin: '4px 0 8px' } }, '하늘에서 밝게 보이는 별(⟨m⟩이 작은 별)이 진짜로도 밝을까요? 위의 식을 보고 골라 보세요. 고르면 아래에서 직접 계산할 수 있어요.'),
             h('div', { class: 'chips' },
               use.map((r) => h('div', { class: 'chip', onclick: () => { S.pred.bright = r.id; C.save(); drawPredict(); drawCalc(); } }, r.id)),
@@ -93,7 +92,7 @@
         predBox.append(pick === null
           ? h('div', { class: 'callout' }, '가장 밝은 별은 주기가 가장 긴 ' + b.id + '예요 (태양의 ' + L + '배).')
           : h('div', { class: 'callout ' + (pick === b.id ? 'good' : 'warn') },
-            pick === b.id ? '🎉 맞아요! 주기가 가장 긴 ' + b.id + '가 태양의 ' + L + '배로 가장 밝아요.'
+            pick === b.id ? '맞아요! 주기가 가장 긴 ' + b.id + '가 태양의 ' + L + '배로 가장 밝아요.'
               : '내가 고른 별은 ' + pick + '. 하지만 가장 밝은 별은 주기가 가장 긴 ' + b.id + '예요 (태양의 ' + L + '배). 주기가 길수록 진짜로 더 밝아요!'));
       }
 
@@ -104,7 +103,7 @@
         const P = pl(), firstId = use[0].id;
         if (!cur || !use.find((r) => r.id === cur)) cur = (use.find((r) => !P[r.id]) || use[0]).id;
         const f = use.find((r) => r.id === cur), v = vals(f);
-        const nLeft = use.filter((r) => !P[r.id]).length, firstDone = !!P[firstId];
+        // 자동 계산 버튼은 맨 아래(drawDone)에 있다
         const next = () => { const n = use.find((r) => !P[r.id]); if (n) cur = n.id; };
         const a = rel.a.toFixed(2), b = rel.b.toFixed(2);
 
@@ -141,15 +140,18 @@
             h('div', null,
               h('div', { class: 'formula', style: { fontSize: '1.1rem' } }, h('b', null, f.id), ':  M = ', a, ' × (log ', h('span', { class: 'hl' }, v.P2.toFixed(2)), ' − 1) ', rel.b < 0 ? '− ' : '+ ', Math.abs(rel.b).toFixed(2)),
               body)),
-          h('div', { class: 'row', style: { marginTop: '12px' } },
-            h('button', { class: 'primary', disabled: !firstDone || !nLeft, onclick: () => { use.forEach((r) => { if (!P[r.id]) P[r.id] = '자동'; }); refresh(); } }, (firstDone ? '' : '🔒 ') + '나머지 별 자동으로 계산하기'),
-            h('small', { class: 'muted' }, !firstDone ? '먼저 ' + firstId + '을 직접 풀어 보세요. 풀면 자동 계산 버튼이 열려요.'
-              : nLeft ? '🔓 남은 ' + nLeft + '개 별은 직접 풀어도 되고, 컴퓨터에게 맡겨도 돼요.' : '모든 별의 절대등급과 광도를 구했어요!'))));
+          ));
       }
 
       function drawDone() {
         doneBox.innerHTML = '';
-        const use = inc(), n = use.filter((r) => pl()[r.id]).length;
+        const use = inc(), P = pl(), n = use.filter((r) => P[r.id]).length;
+        const firstId = use.length ? use[0].id : '', firstDone = !!P[firstId], nLeft = use.length - n;
+        doneBox.append(h('div', { class: 'auto-row' },
+          h('span', { class: 'muted' }, '자동 계산:'),
+          h('button', { class: 'sm', disabled: !firstDone || !nLeft, onclick: () => { use.forEach((r) => { if (!P[r.id]) P[r.id] = '자동'; }); refresh(); } }, '나머지 별 자동으로 계산하기'),
+          h('small', { class: 'muted' }, !firstDone ? firstId + '을 직접 풀면 열려요.'
+            : nLeft ? '남은 ' + nLeft + '개 별은 직접 풀어도 되고, 컴퓨터에게 맡겨도 돼요.' : '모든 별을 구했어요.')));
         doneBox.append(S.plFit
           ? h('div', { class: 'callout good' }, '✔ 각 세페이드의 진짜 밝기(절대등급과 광도)를 구했어요. 이제 마지막 6단계에서 거리를 계산합니다.')
           : h('div', { class: 'muted', style: { marginTop: '8px' } }, '진행: ' + n + ' / ' + use.length + ' 별 완료'));
