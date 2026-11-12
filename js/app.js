@@ -11,7 +11,7 @@
     return { galaxyId: null, seed: 0, step: 1, picked: [], observed: false, comps: {}, batchDone: false, an: {}, incl: {}, calib: false, plFit: false, ext: false, revealed: false, pred: {}, log: {} };
   }
   function load() {
-    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.galaxyId !== undefined) return Object.assign(fresh(), s); } catch (e) { /* 무시 */ }
+    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.galaxyId !== undefined && (s.galaxyId === null || C.galaxyById(s.galaxyId))) return Object.assign(fresh(), s); } catch (e) { /* 무시 */ }
     return fresh();
   }
   C.S = load();

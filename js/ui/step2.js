@@ -38,6 +38,10 @@
       const log = h('div', { class: 'muted', style: { fontSize: '.85rem', maxHeight: '110px', overflow: 'auto' } });
       const startBtn = h('button', { class: 'primary big' }, '촬영 시작');
       const stat = h('div');
+      // 망원경 그림: 촬영하는 동안에는 움직이는 GIF, 그 전과 후에는 멈춘 그림
+      const scope = h('img', { class: 'scope-anim', src: 'img/telescope.png', alt: '돔 안에서 하늘을 따라 움직이는 망원경' });
+      if (!S.observed) new Image().src = 'img/telescope.gif'; // 미리 받아 두기
+      const scopeNote = h('div', { class: 'muted scope-note' }, S.observed ? '관측을 마치고 쉬는 중이에요.' : '촬영을 시작하면 망원경이 별을 따라 움직여요.');
 
       function paintCell(i, status, now) {
         cells[i].className = 'night ' + status + (now ? ' now' : '');
@@ -73,6 +77,8 @@
 
       startBtn.onclick = () => {
         startBtn.disabled = true;
+        scope.src = 'img/telescope.gif';
+        scopeNote.textContent = '지구가 도는 만큼 망원경이 별을 따라가며 찍고 있어요.';
         const frames = {};
         ids.forEach((id) => { frames[id] = []; });
         let d = 0, ei = 0, stopped = false;
@@ -85,6 +91,8 @@
             status.textContent = '관측 완료!';
             startBtn.textContent = '✔ 촬영 완료';
             summary(); C.refreshNav();
+            scope.src = 'img/telescope.png';
+            scopeNote.textContent = '관측을 마치고 쉬는 중이에요.';
             return;
           }
           const n = sched.nights[d];
@@ -127,7 +135,8 @@
               h('span', null, h('i', { style: { background: 'var(--cyan)' } }), '촬영 성공'),
               h('span', null, h('i', { style: { background: '#9aa5b8' } }), '구름'),
               h('span', null, h('i', { style: { background: '#f0f3f7', border: '1px solid #dfe4eb' } }), '망원경을 못 쓴 밤')),
-            h('div', { style: { marginTop: '12px' } }, stat)),
+            h('div', { style: { marginTop: '12px' } }, stat),
+            h('div', { class: 'scope-box' }, scope, scopeNote)),
           h('div', { class: 'panel' },
             h('h3', null, '방금 찍은 사진'),
             view, caption,

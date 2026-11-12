@@ -31,126 +31,41 @@
     cv.width = CW; cv.height = CH;
     const ctx = cv.getContext('2d');
     const rand = C.rng(C.hashStr('ill' + key));
-    const look = gal.look || { bulge: 0.6, dust: 0.5, hii: 0.5, glow: 1 };
-    const px = (p) => [sx(p.u), sy(p.v)];
-    const pa = (gal.pa * Math.PI) / 180, sq = Math.max(0.28, Math.cos((gal.inc * Math.PI) / 180));
-    const AR = C.ARM_RMAX, R0 = 0.03;
-
-    // 빛 덩어리 하나: 은하 평면의 기울기를 따라 납작하게
-    function blob(spr, x, y, rad, alpha, flat) {
-      ctx.save();
-      ctx.translate(x, y); ctx.rotate(pa); ctx.scale(1, flat === undefined ? sq : flat);
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(spr, -rad, -rad, rad * 2, rad * 2);
-      ctx.restore();
-    }
-    // 나선팔 위의 한 점 (r, 팔 번호, 팔 폭 방향 오프셋 dth)
-    function onArm(r, arm, dth) { return px(C.spiralProject(gal, r, C.armTheta(gal, r, arm) + dth)); }
+    const look = Object.assign({ bulge: 0.6, dust: 0.5, hii: 0.5, glow: 1, spikes: 6, armW: 1, ridge: 1, armA: 1, diskA: 1, hot: 1, warmCol: [255, 215, 160] }, gal.look || {});
 
     // 배경: 깊은 남색 + 은은한 성운 얼룩 + 색을 띤 배경 별
     const bg = ctx.createRadialGradient(CW / 2, CH / 2, 40, CW / 2, CH / 2, CW * 0.62);
-    bg.addColorStop(0, '#0e1740'); bg.addColorStop(1, '#03050f');
+    bg.addColorStop(0, '#0b1233'); bg.addColorStop(1, '#03050d');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
     ctx.globalCompositeOperation = 'lighter';
     const haze = [sprite([70, 60, 150], 128), sprite([40, 90, 150], 128)];
     for (let i = 0; i < 5; i++) {
       const rad = 160 + 140 * rand();
-      ctx.globalAlpha = 0.07 + 0.05 * rand();
+      ctx.globalAlpha = 0.05 + 0.04 * rand();
       ctx.drawImage(haze[i % 2], rand() * CW - rad, rand() * CH - rad, rad * 2, rad * 2);
     }
     ctx.globalAlpha = 1;
-    const tint = [[255, 255, 255], [190, 210, 255], [255, 225, 190], [255, 200, 200]];
-    for (let i = 0; i < 160; i++) {
-      const c = tint[(rand() * tint.length) | 0], rr = 0.5 + 1.1 * rand() * rand() * 2;
-      ctx.fillStyle = rgba(c, 0.2 + 0.6 * rand());
+    // 사진처럼 촘촘한 배경 별 (흰색·푸른색·주황색)
+    const tint = [[255, 255, 255], [185, 210, 255], [255, 205, 150], [255, 170, 120]];
+    for (let i = 0; i < 900; i++) {
+      const c = tint[(rand() * tint.length) | 0], rr = 0.35 + 0.9 * rand() * rand() * rand() * 2;
+      ctx.fillStyle = rgba(c, 0.25 + 0.65 * rand());
       ctx.beginPath(); ctx.arc(rand() * CW, rand() * CH, rr, 0, 6.2832); ctx.fill();
     }
-    const glint = sprite([255, 255, 255], 48);
-    for (let i = 0; i < 6; i++) {
-      const x = rand() * CW, y = rand() * CH;
-      ctx.globalAlpha = 0.5; ctx.drawImage(glint, x - 12, y - 12, 24, 24);
-      ctx.globalAlpha = 0.35; ctx.fillStyle = '#fff';
-      ctx.fillRect(x - 11, y - 0.5, 22, 1); ctx.fillRect(x - 0.5, y - 11, 1, 22);
+    // 우리 은하 안의 밝은 앞쪽 별: 십자 모양 빛줄기
+    const glint = sprite([255, 255, 255], 48), glintB = sprite([200, 220, 255], 48);
+    for (let i = 0; i < look.spikes; i++) {
+      const x = rand() * CW, y = rand() * (CH - 90), big = rand() < 0.4, L = big ? 16 + 14 * rand() : 8 + 6 * rand();
+      ctx.globalAlpha = big ? 0.75 : 0.5; ctx.drawImage(rand() < 0.5 ? glint : glintB, x - L * 0.7, y - L * 0.7, L * 1.4, L * 1.4);
+      const lg = (x0, y0, x1, y1) => { const gr = ctx.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(220,235,255,0)'); gr.addColorStop(0.5, 'rgba(235,245,255,.9)'); gr.addColorStop(1, 'rgba(220,235,255,0)'); return gr; };
+      ctx.globalAlpha = big ? 0.6 : 0.4;
+      ctx.fillStyle = lg(x - L, y, x + L, y); ctx.fillRect(x - L, y - 0.6, 2 * L, 1.2);
+      ctx.fillStyle = lg(x, y - L, x, y + L); ctx.fillRect(x - 0.6, y - L, 1.2, 2 * L);
     }
     ctx.globalAlpha = 1;
 
-    // 원반 전체의 바탕빛 (바깥으로 갈수록 은은하게 사라짐)
-    const Rd = AR * 1.3 * CH * 1.12;
-    ctx.save();
-    ctx.translate(CW / 2, CH / 2); ctx.rotate(pa); ctx.scale(1, sq);
-    const gd = ctx.createRadialGradient(0, 0, 0, 0, 0, Rd);
-    gd.addColorStop(0, rgba(mix(gal.arm, gal.core, 0.5), 0.34 * look.glow));
-    gd.addColorStop(0.35, rgba(gal.arm, 0.2 * look.glow));
-    gd.addColorStop(0.75, rgba(gal.arm, 0.07 * look.glow));
-    gd.addColorStop(1, rgba(gal.arm, 0));
-    ctx.fillStyle = gd; ctx.beginPath(); ctx.arc(0, 0, Rd, 0, 6.2832); ctx.fill();
-    ctx.restore();
-
-    // 나선팔: 안쪽은 노랗고 바깥은 푸르게. 넓고 흐릿한 띠 + 좁고 밝은 능선
-    const armSpr = [];
-    for (let k = 0; k < 6; k++) armSpr.push(sprite(mix(mix(gal.core, [255, 255, 255], 0.2), gal.arm, k / 5), 64));
-    const ridge = sprite(mix(gal.arm, [255, 255, 255], 0.65), 64);
-    [0, 1].forEach((arm) => {
-      const N = 230;
-      for (let i = 0; i < N; i++) {
-        const t = i / N, r = R0 + t * (AR - R0);
-        const fade = Math.min(1, t * 7) * (1 - 0.72 * t * t);
-        const spr = armSpr[Math.min(5, Math.floor((r / (AR * 0.55)) * 5))];
-        for (let k = 0; k < 3; k++) {
-          const p = onArm(r * (1 + 0.03 * rand.gauss()), arm, rand.gauss() * 0.11);
-          blob(spr, p[0], p[1], 10 + 36 * t, 0.085 * fade * look.glow);
-        }
-        if (i % 2 === 0) {
-          const p = onArm(r, arm, rand.gauss() * 0.04);
-          blob(ridge, p[0], p[1], 5 + 9 * t, 0.2 * fade);
-        }
-      }
-    });
-
-    // 먼지띠: 팔 안쪽 가장자리를 따라 어두운 줄무늬 (일반 합성)
-    ctx.globalCompositeOperation = 'source-over';
-    const dust = sprite([3, 5, 14], 64);
-    [0, 1].forEach((arm) => {
-      const N = 170;
-      for (let i = 0; i < N; i++) {
-        const t = 0.1 + 0.85 * (i / N), r = R0 + t * (AR - R0);
-        const p = onArm(r * (1 + 0.02 * rand.gauss()), arm, -0.17 + rand.gauss() * 0.04);
-        blob(dust, p[0], p[1], 5 + 15 * t, 0.2 * look.dust * (1 - 0.5 * t), sq);
-      }
-    });
-    ctx.globalCompositeOperation = 'lighter';
-
-    // 팔을 따라 흩어진 별들 (하나하나는 작은 점)
-    for (let i = 0; i < 2600; i++) {
-      const r = Math.min(AR, R0 - gal.hr * 0.9 * Math.log(1 - rand() * 0.97));
-      const inArm = rand() < 0.72;
-      const th = inArm ? C.armTheta(gal, r, rand() < 0.5 ? 0 : 1) + rand.gauss() * 0.2 : rand() * 6.2832;
-      const p = px(C.spiralProject(gal, r, th));
-      const warm = Math.max(0, 1 - r / 0.12);
-      const c = mix([200, 225, 255], [255, 215, 160], warm);
-      ctx.fillStyle = rgba(c, 0.25 + 0.65 * rand());
-      const s = 0.5 + 1.1 * rand() * rand();
-      ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s);
-    }
-
-    // 젊은 별무리와 분홍빛 수소 구름(HII 영역)
-    const pink = sprite([255, 120, 175], 64), blue = sprite([170, 205, 255], 64);
-    const nHii = Math.round(46 * look.hii);
-    for (let i = 0; i < nHii; i++) {
-      const t = 0.18 + 0.8 * rand(), r = R0 + t * (AR - R0), arm = rand() < 0.5 ? 0 : 1;
-      const p = onArm(r, arm, rand.gauss() * 0.1);
-      const rad = 5 + 10 * rand();
-      blob(pink, p[0], p[1], rad * 1.6, 0.35 + 0.35 * rand());
-      blob(blue, p[0], p[1], rad * 0.8, 0.5 + 0.3 * rand());
-    }
-
-    // 중심부(팽대부): 따뜻한 빛의 타원 + 밝은 핵
-    const bR = CH * 0.17 * look.bulge + CH * 0.035, bq = 0.55 + 0.45 * sq;
-    const warmSpr = sprite(mix(gal.core, [255, 190, 110], 0.4), 128), hotSpr = sprite(mix(gal.core, [255, 255, 255], 0.65), 128);
-    blob(warmSpr, CW / 2, CH / 2, bR * 1.5, 0.85, bq);
-    blob(warmSpr, CW / 2, CH / 2, bR * 0.9, 0.9, bq);
-    blob(hotSpr, CW / 2, CH / 2, bR * 0.5, 0.95, bq);
-    blob(hotSpr, CW / 2, CH / 2, bR * 0.2, 1, 1);
+    if (gal.kind === 'irregular') drawIrregular(ctx, rand, gal, look);
+    else drawSpiral(ctx, rand, gal, look);
 
     // 이름표 (아래쪽 어두운 띠 위에)
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
@@ -163,6 +78,239 @@
     cache[key] = cv;
     return cv;
   }
+
+  // 빛 덩어리 하나: (ang)만큼 돌리고 (flat)만큼 납작하게
+  function blobAt(ctx, spr, x, y, rad, alpha, ang, flat) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang); ctx.scale(1, flat);
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(spr, -rad, -rad, rad * 2, rad * 2);
+    ctx.restore();
+  }
+
+  // ---------- 나선은하 (M31, M33, NGC 300) ----------
+  function drawSpiral(ctx, rand, gal, look) {
+    const px = (p) => [sx(p.u), sy(p.v)];
+    const pa = (gal.pa * Math.PI) / 180, sq = Math.max(0.24, Math.cos((gal.inc * Math.PI) / 180));
+    const AR = C.ARM_RMAX, R0 = 0.03;
+    const blob = (spr, x, y, rad, alpha, flat) => blobAt(ctx, spr, x, y, rad, alpha, pa, flat === undefined ? sq : flat);
+    const onArm = (r, arm, dth) => px(C.spiralProject(gal, r, C.armTheta(gal, r, arm) + dth));
+    const disk = (r, th) => px(C.spiralProject(gal, r, th));
+
+    // 원반 전체의 바탕빛 (바깥으로 갈수록 은은하게 사라짐)
+    const Rd = AR * 1.3 * CH * 1.12;
+    ctx.save();
+    ctx.translate(CW / 2, CH / 2); ctx.rotate(pa); ctx.scale(1, sq);
+    const gd = ctx.createRadialGradient(0, 0, 0, 0, 0, Rd);
+    gd.addColorStop(0, rgba(mix(gal.arm, gal.core, 0.5), 0.34 * look.glow * look.diskA));
+    gd.addColorStop(0.35, rgba(gal.arm, 0.2 * look.glow * look.diskA));
+    gd.addColorStop(0.75, rgba(gal.arm, 0.07 * look.glow * look.diskA));
+    gd.addColorStop(1, rgba(gal.arm, 0));
+    ctx.fillStyle = gd; ctx.beginPath(); ctx.arc(0, 0, Rd, 0, 6.2832); ctx.fill();
+    // 안쪽 원반이 넓게 노르스름한 은하 (안드로메다)
+    if (look.warm) {
+      const gw = ctx.createRadialGradient(0, 0, 0, 0, 0, Rd * 0.62);
+      gw.addColorStop(0, rgba(look.warmCol, Math.min(0.8, 0.42 * look.warm)));
+      gw.addColorStop(0.5, rgba(mix(look.warmCol, [200, 150, 120], 0.3), 0.2 * look.warm));
+      gw.addColorStop(1, rgba([200, 160, 130], 0));
+      ctx.fillStyle = gw; ctx.beginPath(); ctx.arc(0, 0, Rd * 0.62, 0, 6.2832); ctx.fill();
+    }
+    ctx.restore();
+
+    // 나선팔: 안쪽은 노랗고 바깥은 푸르게. 넓고 흐릿한 띠 + 좁고 밝은 능선
+    const armSpr = [];
+    for (let k = 0; k < 6; k++) armSpr.push(sprite(mix(mix(gal.core, [255, 255, 255], 0.2), gal.arm, k / 5), 64));
+    const ridge = sprite(mix(gal.arm, [255, 255, 255], 0.65), 64);
+    const floc = look.floc || 0;
+    [0, 1].forEach((arm) => {
+      const N = 230;
+      for (let i = 0; i < N; i++) {
+        const t = i / N, r = R0 + t * (AR - R0);
+        const fade = Math.min(1, t * 7) * (1 - 0.72 * t * t);
+        const spr = armSpr[Math.min(5, Math.floor((r / (AR * 0.55)) * 5))];
+        for (let k = 0; k < 3; k++) {
+          const p = onArm(r * (1 + 0.03 * look.armW * rand.gauss()), arm, rand.gauss() * 0.11 * look.armW);
+          blob(spr, p[0], p[1], (10 + 36 * t) * (0.6 + 0.4 * look.armW), 0.085 * fade * look.glow * look.armA);
+        }
+        if (i % 2 === 0 && rand() > 0.45 * floc) {
+          const p = onArm(r, arm, rand.gauss() * 0.04);
+          blob(ridge, p[0], p[1], 5 + 9 * t, 0.2 * fade * look.ridge * (1 - 0.95 * t * t));
+        }
+      }
+    });
+    // 솜털처럼 조각난 팔 (삼각형자리 은하): 원반 곳곳에 짧은 팔 조각
+    if (floc) {
+      const piece = sprite(mix(gal.arm, [255, 255, 255], 0.5), 64);
+      for (let s = 0; s < 70; s++) {
+        const r = R0 + (0.15 + 0.8 * rand()) * (AR - R0), th = rand() * 6.2832, len = 0.25 + 0.35 * rand();
+        for (let k = 0; k < 10; k++) {
+          const rr = r * (1 + 0.15 * (k / 10)), tt = th + len * (k / 10);
+          const p = disk(rr, tt);
+          blob(piece, p[0], p[1], 6 + 8 * rand(), 0.07 + 0.05 * rand());
+        }
+      }
+    }
+
+    // 먼지띠: 팔 안쪽 가장자리를 따라 어두운 줄무늬 (일반 합성)
+    ctx.globalCompositeOperation = 'source-over';
+    const dust = sprite([12, 6, 4], 64);
+    [0, 1].forEach((arm) => {
+      const N = 170;
+      for (let i = 0; i < N; i++) {
+        if (floc && rand() < 0.55) continue;
+        const t = 0.1 + 0.85 * (i / N), r = R0 + t * (AR - R0);
+        const p = onArm(r * (1 + 0.02 * rand.gauss()), arm, -0.17 + rand.gauss() * 0.04);
+        blob(dust, p[0], p[1], 5 + 15 * t, 0.2 * look.dust * (1 - 0.5 * t), sq);
+      }
+    });
+    if (floc) {
+      for (let i = 0; i < 160; i++) {
+        const p = disk(R0 + (0.05 + 0.75 * rand()) * (AR - R0), rand() * 6.2832);
+        blob(dust, p[0], p[1], 3 + 5 * rand(), 0.25 * look.dust);
+      }
+    }
+    // 중심부를 둘러싼 어두운 먼지 고리 (조각가자리 NGC 300)
+    if (look.ring) {
+      const rr = 0.085;
+      for (let i = 0; i < 90; i++) {
+        const p = disk(rr * (1 + 0.18 * rand.gauss()), rand() * 6.2832);
+        blob(dust, p[0], p[1], 14 + 12 * rand(), 0.18 * look.ring);
+      }
+    }
+    ctx.globalCompositeOperation = 'lighter';
+
+    // 팔을 따라 흩어진 별들 (하나하나는 작은 점)
+    for (let i = 0; i < 3400; i++) {
+      const r = R0 - gal.hr * 0.9 * Math.log(1 - rand() * 0.97);
+      if (r > AR * (0.9 + 0.2 * rand())) continue;
+      const inArm = rand() < 0.72 - 0.3 * floc;
+      const th = inArm ? C.armTheta(gal, r, rand() < 0.5 ? 0 : 1) + rand.gauss() * 0.2 : rand() * 6.2832;
+      const p = disk(r, th);
+      const warm = Math.max(0, 1 - r / (look.warm ? 0.18 : 0.12));
+      const c = mix([200, 225, 255], [255, 215, 160], warm);
+      ctx.fillStyle = rgba(c, 0.25 + 0.65 * rand());
+      const s = 0.5 + 1.1 * rand() * rand();
+      ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s);
+    }
+
+    // 젊은 별무리와 분홍빛 수소 구름(HII 영역)
+    const pink = sprite([255, 90, 150], 64), blue = sprite([170, 205, 255], 64);
+    const nHii = Math.round(46 * look.hii);
+    for (let i = 0; i < nHii; i++) {
+      const t = 0.18 + 0.8 * rand(), r = R0 + t * (AR - R0);
+      const p = floc && rand() < 0.4 ? disk(r, rand() * 6.2832) : onArm(r, rand() < 0.5 ? 0 : 1, rand.gauss() * 0.1);
+      const rad = 3 + 7 * rand() * rand();
+      blob(pink, p[0], p[1], rad * 1.6, 0.35 + 0.35 * rand(), 1);
+      blob(blue, p[0], p[1], rad * 0.8, 0.4 + 0.3 * rand(), 1);
+    }
+    // 아주 큰 수소 구름 하나 (삼각형자리 은하의 NGC 604)
+    if (look.big) {
+      const p = onArm(R0 + look.big.r * (AR - R0), look.big.arm, look.big.d);
+      blob(pink, p[0], p[1], 34, 0.7, 1); blob(pink, p[0], p[1], 18, 0.8, 1);
+      blob(sprite([255, 220, 235], 64), p[0], p[1], 8, 0.9, 1);
+    }
+
+    // 중심부(팽대부): 따뜻한 빛의 타원 + 밝은 핵
+    const bR = CH * 0.17 * look.bulge + CH * 0.035, bq = 0.55 + 0.45 * sq;
+    const warmSpr = sprite(mix(gal.core, [255, 190, 110], 0.4), 128), hotSpr = sprite(mix(gal.core, [255, 255, 255], 0.65), 128);
+    blob(warmSpr, CW / 2, CH / 2, bR * 1.5, 0.85, bq);
+    blob(warmSpr, CW / 2, CH / 2, bR * 0.9, 0.9, bq);
+    blob(hotSpr, CW / 2, CH / 2, bR * 0.5, 0.95 * look.hot, bq);
+    blob(hotSpr, CW / 2, CH / 2, bR * 0.2, look.hot, 1);
+
+    // 위성 은하 (안드로메다 곁의 M32·M110): 작고 둥근 노르스름한 빛
+    (look.sats || []).forEach((s) => {
+      const x = sx(0.5 + s.du), y = sy(0.5 + s.dv), R = s.r * CH;
+      const sp = sprite([255, 228, 195], 128);
+      blobAt(ctx, sp, x, y, R * 2.2, 0.55, s.ang || 0, s.q);
+      blobAt(ctx, sp, x, y, R, 0.8, s.ang || 0, s.q);
+      blobAt(ctx, sprite([255, 245, 230], 64), x, y, R * 0.35, 0.9, 0, 1);
+    });
+  }
+
+  // ---------- 막대가 있는 불규칙은하 (대마젤란 은하) ----------
+  function drawIrregular(ctx, rand, gal, look) {
+    const L = C.LMC, cs = Math.cos(L.bar.ang), sn = Math.sin(L.bar.ang);
+    const P = (u, v) => [sx(u), sy(v)];
+    const blob = (spr, x, y, rad, alpha, ang, flat) => blobAt(ctx, spr, x, y, rad, alpha, ang || 0, flat || 1);
+
+    // 둥글고 흐릿한 원반 (가장자리는 푸르스름, 안쪽은 엷은 황갈색)
+    const c0 = P(L.disk.u, L.disk.v), Rd = L.disk.R * CH * 1.15;
+    const gd = ctx.createRadialGradient(c0[0], c0[1], 0, c0[0], c0[1], Rd);
+    gd.addColorStop(0, rgba([215, 190, 160], 0.26)); gd.addColorStop(0.55, rgba([150, 150, 190], 0.14));
+    gd.addColorStop(1, rgba([90, 110, 170], 0));
+    ctx.fillStyle = gd; ctx.beginPath(); ctx.arc(c0[0], c0[1], Rd, 0, 6.2832); ctx.fill();
+
+    // 위쪽 활 모양의 푸른 별 생성 지역 (조각조각 뭉친 푸른 빛)
+    const blueA = sprite([110, 150, 255], 64), blueB = sprite([170, 200, 255], 64);
+    for (let i = 0; i < 520; i++) {
+      const a = L.arc.a0 + rand() * (L.arc.a1 - L.arc.a0), R = L.arc.R * (1 + 0.16 * rand.gauss());
+      const p = P(L.arc.u + R * Math.cos(a), L.arc.v + R * Math.sin(a) * 0.95);
+      blob(rand() < 0.6 ? blueA : blueB, p[0], p[1], 6 + 16 * rand() * rand(), 0.07 + 0.08 * rand());
+    }
+    // 원반 여기저기 흩어진 푸른 조각
+    for (let i = 0; i < 140; i++) {
+      const a = rand() * 6.2832, R = L.disk.R * Math.sqrt(rand());
+      const p = P(L.disk.u + R * Math.cos(a), L.disk.v + R * Math.sin(a));
+      blob(blueA, p[0], p[1], 5 + 10 * rand(), 0.05 + 0.05 * rand());
+    }
+
+    // 밝은 막대: 크림색 빛이 길게 뭉친 띠
+    const barSpr = sprite([250, 220, 180], 128), barHot = sprite([255, 238, 210], 128);
+    const bx = sx(L.bar.u), by = sy(L.bar.v), BL = L.bar.L * CH, BW = L.bar.W * CH;
+    blob(sprite([225, 195, 160], 128), bx, by + BW * 0.6, BL * 1.8, 0.55, L.bar.ang, 0.8);
+    blob(barSpr, bx, by, BL * 1.35, 0.55, L.bar.ang, 0.45);
+    for (let i = 0; i < 260; i++) {
+      const t = (rand() * 2 - 1), w = rand.gauss() * 0.7;
+      const x = bx + t * BL * cs - w * BW * sn, y = by + t * BL * sn + w * BW * cs;
+      blob(rand() < 0.3 ? barHot : barSpr, x, y, 10 + 22 * rand(), 0.05 + 0.06 * (1 - Math.abs(t)), L.bar.ang, 0.7);
+    }
+    blob(barHot, bx, by, BL * 0.75, 0.18, L.bar.ang, 0.35);
+
+    // 먼지: 막대 위쪽과 타란툴라 성운 둘레의 갈색 그늘
+    ctx.globalCompositeOperation = 'source-over';
+    const dust = sprite([30, 16, 8], 64);
+    for (let i = 0; i < 110; i++) {
+      const t = rand() * 2 - 1;
+      const x = bx + t * BL * cs + BW * 1.1 * sn * (0.6 + 0.6 * rand()), y = by + t * BL * sn - BW * 1.1 * cs * (0.6 + 0.6 * rand());
+      if (t > 0.3 && rand() < 0.7) continue;
+      blob(dust, x, y, 4 + 8 * rand(), 0.16 + 0.12 * rand());
+    }
+    ctx.globalCompositeOperation = 'lighter';
+
+    // 별 하나하나 (막대에 많이, 원반에 고루)
+    for (let i = 0; i < 4200; i++) {
+      const p = C.irrSample(rand), q = P(p.u + 0.01 * rand.gauss(), p.v + 0.01 * rand.gauss());
+      const inBar = Math.abs((p.v - L.bar.v) * cs - (p.u - L.bar.u) * sn) < L.bar.W * 1.2;
+      const c = inBar ? mix([255, 235, 200], [255, 255, 255], rand() * 0.5) : mix([190, 215, 255], [255, 255, 255], rand() * 0.5);
+      ctx.fillStyle = rgba(c, 0.25 + 0.6 * rand());
+      const s = 0.5 + 1.2 * rand() * rand();
+      ctx.fillRect(q[0] - s / 2, q[1] - s / 2, s, s);
+    }
+
+    // 분홍빛 수소 구름: 활 모양 지역과 막대 끝 둘레
+    const pink = sprite([255, 80, 150], 64), white = sprite([255, 235, 245], 64);
+    const nH = Math.round(40 * look.hii);
+    for (let i = 0; i < nH; i++) {
+      let p;
+      if (rand() < 0.6) {
+        const a = L.arc.a0 + rand() * (L.arc.a1 - L.arc.a0), R = L.arc.R * (1 + 0.12 * rand.gauss());
+        p = P(L.arc.u + R * Math.cos(a), L.arc.v + R * Math.sin(a) * 0.95);
+      } else {
+        const a = rand() * 6.2832, R = L.disk.R * (0.3 + 0.6 * rand());
+        p = P(L.disk.u + R * Math.cos(a), L.disk.v + R * Math.sin(a));
+      }
+      const rad = 3 + 8 * rand() * rand();
+      blob(pink, p[0], p[1], rad * 1.7, 0.4 + 0.35 * rand());
+      blob(white, p[0], p[1], rad * 0.5, 0.35);
+    }
+    // 타란툴라 성운 (30 Doradus): 막대 왼쪽 위의 큰 분홍 덩어리
+    const tp = P(L.tar.u, L.tar.v);
+    for (let i = 0; i < 26; i++) blob(pink, tp[0] + 22 * rand.gauss(), tp[1] + 16 * rand.gauss(), 8 + 16 * rand(), 0.25 + 0.25 * rand());
+    blob(pink, tp[0], tp[1], 42, 0.55); blob(blueB, tp[0], tp[1], 22, 0.5); blob(white, tp[0], tp[1], 9, 0.9);
+  }
+
+  C.illustration = illustration;
 
   function resetDownstream() {
     const S = C.S;

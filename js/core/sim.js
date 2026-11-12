@@ -59,6 +59,7 @@
     const W = SIM.W, H = SIM.H;
     const crowd = env ? env.crowd : 0.4;
     const dist01 = env ? env.dist : 0.5; // 0(가까운 은하)~1(먼 은하): 별이 더 뭉쳐 보인다
+    const o = env && env.off ? env.off : 0; // 노출 차이만큼 등급 기준을 옮긴다 (가까운 은하는 짧게 찍는다)
     const stars = [], hidden = [], bg = [], pts = [];
     const T = v.meanMag;
     const free = (x, y, sep) => pts.every((p) => Math.hypot(p[0] - x, p[1] - y) >= sep);
@@ -90,8 +91,8 @@
     stars.push({ role: 'target', x: tx, y: ty, mag: T, cat: null });
 
     // 붐비는 시야에서도 비교성을 찾을 수 있게, 앞의 셋은 목표 별보다 확실히 밝게 (포화되지 않는 선까지)
-    for (let i = 0; i < 6; i++) add('good', i < 3 ? Math.max(19.4, T + rand.range(-2.0, -0.8)) : T + rand.range(-1.0, 1.0), 16, 14);
-    add('sat', 16.6 + rand.range(-0.3, 0.3), 16, 14);
+    for (let i = 0; i < 6; i++) add('good', i < 3 ? Math.max(19.4 + o, T + rand.range(-2.0, -0.8)) : T + rand.range(-1.0, 1.0), 16, 14);
+    add('sat', 16.6 + o + rand.range(-0.3, 0.3), 16, 14);
     for (let i = 0; i < 2; i++) add('faint', T + rand.range(2.6, 3.2), 14, 12);
     // 혼입(블렌드): 가까운 이웃이 같이 구경에 들어온다
     const b = add('blend', T + rand.range(-0.5, 0.5), 18, 16);
@@ -107,7 +108,7 @@
     stars.push({ role: 'edge', x: ex, y: ey, mag: T + rand.range(-0.5, 0.5), cat: 0 });
     stars[stars.length - 1].cat = stars[stars.length - 1].mag + 0.02 * rand.gauss();
     const nOther = 5 + Math.floor(rand() * 6);
-    for (let i = 0; i < nOther; i++) add('other', Math.max(17.5, T + rand.range(-2.5, 2.0)), 12, 10);
+    for (let i = 0; i < nOther; i++) add('other', Math.max(17.5 + o, T + rand.range(-2.5, 2.0)), 12, 10);
 
     // 배경 은하의 희미한 별들 (카탈로그에 없음) - 붐비는 시야일수록 많고 밝다
     const nBg = Math.round(25 + 95 * crowd + 30 * dist01 + 12 * rand());
@@ -115,7 +116,7 @@
       const x = rand() * W, y = rand() * H;
       if (rand() > dens(x, y) + 0.2) { i--; continue; }
       const near = Math.hypot(x - tx, y - ty) < 7;
-      bg.push({ x, y, mag: near ? rand.range(27.0, 28.5) : rand.range(25.2 - 0.9 * crowd, 28.2) });
+      bg.push({ x, y, mag: o + (near ? rand.range(27.0, 28.5) : rand.range(25.2 - 0.9 * crowd, 28.2)) });
     }
 
     // 시야마다 다른 특징: 압축된 성단, 앞쪽 밝은 별(회절 가시), 배경 은하, 은하 빛 얼룩, 먼지띠, 뜨거운 화소
@@ -138,7 +139,7 @@
         const x = 10 + rand() * (W - 20), y = 10 + rand() * (H - 20);
         // 밝은 별의 날개는 시상에 따라 변하므로, 비교성들과 멀리 떨어뜨린다
         if (!far(x, y, 30) || !free(x, y, 28)) continue;
-        bg.push({ x, y, mag: rand.range(15.2, 17.4), spike: rand() * Math.PI / 2 });
+        bg.push({ x, y, mag: o + rand.range(15.2, 17.4), spike: rand() * Math.PI / 2 });
         feats.push('fg');
         break;
       }
@@ -194,7 +195,7 @@
       else s.id = String.fromCharCode(65 + li++);
     });
     return {
-      W, H, stars, hidden, bg, haze, gals, lane, hot, dust, feats,
+      W, H, stars, hidden, bg, haze, gals, lane, hot, dust, feats, off: o,
       glow: SIM.SKY0 * (0.03 + 0.18 * crowd) * rand.range(0.6, 1.2) * (1 + 0.8 * dist01),
       ell: rand.range(0, 0.14), eang: rand() * Math.PI, // 별 모양이 살짝 길쭉한 정도(추적 오차)
       grad: [rand.range(-0.12, 0.12), rand.range(-0.12, 0.12)]
@@ -253,7 +254,7 @@
     });
     vars.forEach((v) => {
       const rho = Math.hypot(v.u - 0.5, v.v - 0.5) / (C.ARM_RMAX * 1.3);
-      v.stamp = makeStamp(rand, v, { crowd: Math.exp(-2.2 * Math.min(1.2, rho)), dist: Math.max(0, Math.min(1, (galaxy.mu - 24.4) / 3.2)) });
+      v.stamp = makeStamp(rand, v, { crowd: Math.exp(-2.2 * Math.min(1.2, rho)), dist: Math.max(0, Math.min(1, (galaxy.mu - 24.4) / 3.2)), off: galaxy.off || 0 });
     });
 
     return { galaxy, seed, vars };
@@ -384,7 +385,7 @@
     const st = v.stamp, W = st.W, H = st.H;
     const img = new Float32Array(W * H);
     const tr = Math.pow(10, -0.4 * ep.transp);
-    const fl = (m) => Math.pow(10, 0.4 * (SIM.ZP - m)) * tr;
+    const fl = (m) => Math.pow(10, 0.4 * (SIM.ZP + (st.off || 0) - m)) * tr;
     const R = Math.ceil(4.5 * ep.fwhm);
 
     st.stars.forEach((s) => {
