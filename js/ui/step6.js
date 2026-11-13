@@ -33,6 +33,7 @@
       // 별마다 포그슨 방정식으로 거리를 직접 구한다. 첫 별(V1)을 풀면 나머지는 컴퓨터에게 맡길 수 있다.
       // S.log.pog[id] = '직접' | '풀이' | '자동'  (예전 저장분의 S.log.pogson 은 첫 별 기록으로 옮긴다)
       const pog = () => (S.log.pog = S.log.pog || {});
+      const peek = () => (S.log.peek = S.log.peek || {}); // 정답과 풀이를 열어 본 별
       const calcDone = () => rows.every((r) => pog()[r.id]);
       if (!calcDone()) S.revealed = false;   // 모든 별을 풀기 전에는 정답을 공개하지 않는다
       const HOW = { '직접': '직접 ✓', '풀이': '풀이 봄', '자동': '자동' };
@@ -59,7 +60,8 @@
             { label: '거리 모듈러스 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: mu.toFixed(2) + '  (' + m.toFixed(2) + ' − (' + M.toFixed(2) + '))' },
             { label: '거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dK, tolRel: 0.015, hint: '(μ+5)÷5 를 구해 10의 거듭제곱을 하면 pc 단위 거리가 나와요. 1000으로 나누면 kpc예요', show: dK.toFixed(1) + ' kpc  (= ' + Math.round(dK * 1000).toLocaleString('ko-KR') + ' pc)' }
           ], {
-            onGrade: (right, total) => { if (right === total) { P[f.id] = '직접'; next(); setTimeout(refresh, 700); } },
+            onGrade: (right, total) => { if (right === total) { P[f.id] = peek()['6:' + f.id] ? '풀이' : '직접'; next(); setTimeout(refresh, 700); } },
+            onPeek: () => { peek()['6:' + f.id] = true; C.save(); },
             extra: [h('button', { class: 'ghost', onclick: () => { P[f.id] = '풀이'; refresh(); } }, '모르겠어요, 풀이 보고 넘어가기')],
             solution: [h('p', null, '① μ = ' + m.toFixed(2) + ' − (' + M.toFixed(2) + ') = ' + mu.toFixed(2)),
               h('p', null, '② (μ + 5) ÷ 5 = ' + ((mu + 5) / 5).toFixed(3) + ' → d = 10^' + ((mu + 5) / 5).toFixed(3) + ' = ' + Math.round(dK * 1000).toLocaleString('ko-KR') + ' pc = ' + dK.toFixed(1) + ' kpc')]
@@ -134,7 +136,7 @@
               h('div', { style: { margin: '14px 0' } },
                 h('div', { class: 'result-big' }, C.lyKo(r.d * 3.26156)),
                 h('div', { class: 'muted' }, '(' + C.pcFmt(r.d) + ') · ± ' + C.distFmt(r.dErr) + ' 계산 오차 범위')),
-              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; C.save(); drawResult(); C.refreshNav(); } }, '정답 확인하기'))));
+              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; freeze(r); C.save(); drawResult(); C.refreshNav(); } }, '정답 확인하기'))));
         // 차트
         const xr = [0.3, 1.7], yr = C.padRange(r.list.map((x) => x.mu).concat([r.mean - 0.5, r.mean + 0.5]), 0.1);
         pl.begin(xr[0], xr[1], yr[0], yr[1]);
@@ -147,7 +149,15 @@
         chal.refresh();
       }
 
+      // 처음 정답을 확인한 순간의 결과로 등급을 매기고 고정한다 (그 뒤에 값을 바꿔도 등급은 그대로)
+      function freeze(r) {
+        if (S.result) return;
+        const dTrue = C.distFromMu(gal.mu);
+        S.result = C.gradeResult({ rows, err: (r.d / dTrue - 1) * 100, dTrue });
+      }
+
       function drawReveal(r) {
+        if (!S.result) { freeze(r); C.save(); }
         const dTrue = C.distFromMu(gal.mu);
         const other = (function () {
           const A = S.ext ? 0 : gal.Av;
@@ -171,15 +181,17 @@
           h('p', { style: { marginTop: '10px' } }, good ? '훌륭해요! 오차 10% 안쪽입니다.' : '오차가 조금 커요. 먼지 보정(성간소광)을 켜고 끄며 비교해 보고, 5단계에서 이상한 별을 빼 보세요.',
             ' ' + (S.ext ? '먼지 보정을 끄면' : '먼지 보정을 켜면') + ' 거리는 ' + C.distFmt(other) + ', 오차 ' + (errOther >= 0 ? '+' : '') + errOther.toFixed(1) + '% 가 돼요.'),
           h('div', { class: 'callout' },
-            h('b', null, '내 분석 성적표 · '), '세페이드 ' + truthC + '개 중 ' + found + '개를 찾았고 · 식쌍성을 세페이드로 잘못 넣은 것 ' + wrong + '개 · 주기를 4% 안으로 맞힌 별 ' + periodOK + '개'),
+            h('b', null, '내 분석 요약 · '), '세페이드 ' + truthC + '개 중 ' + found + '개를 찾았고 · 식쌍성을 세페이드로 잘못 넣은 것 ' + wrong + '개 · 주기를 4% 안으로 맞힌 별 ' + periodOK + '개'),
+          h('h3', { style: { marginTop: '16px' } }, '내 등급'),
+          C.gradeCard(S.result),
           myRecord(r, dTrue),
           h('p', { class: 'muted' }, gal.fact),
           h('div', { class: 'row' },
             h('button', { onclick: () => window.print() }, '결과 인쇄 / PDF 저장'),
-            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
+            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.S.result = null; C.S.time = null; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
       }
 
-      // 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것 (점수는 매기지 않는다)
+      // 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것
       function myRecord(r, dTrue) {
         const LY = 3.26156, first = S.picked[0], P = S.pred;
         const an = S.picked.map((id) => S.an[id] || {});

@@ -284,3 +284,18 @@ dialog#gloss { overflow: visible; padding: 0; }
 .scope-box { margin-top: 14px; }
 .scope-anim { display: block; width: 100%; height: auto; border: 1px solid var(--line, #dfe4eb); border-radius: var(--radius); background: #fff; }
 .scope-note { margin-top: 6px; font-size: .85rem; }
+
+/* 결과 등급 */
+.grade-card { border: 2px solid var(--navy); border-radius: var(--radius); background: #fff; padding: 16px; margin: 8px 0 12px; }
+.grade-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.grade-head b { display: block; font-size: 1.15rem; color: var(--navy); }
+.grade-head small { color: var(--muted); }
+.stars { font-size: 2.2rem; letter-spacing: 2px; line-height: 1; white-space: nowrap; }
+.stars span { color: #d6dbe3; }
+.stars span.on { color: var(--yellow); text-shadow: 0 1px 0 #c79400; }
+.grade-head .badge { background: var(--cyan-soft); color: var(--cyan); border: 2px solid var(--cyan); font-weight: 800; padding: 8px 14px; border-radius: var(--radius); white-space: nowrap; }
+.grade-card td:nth-child(2) { white-space: nowrap; font-weight: 700; }
+.code-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
+.code-row span { font-weight: 700; color: var(--navy); }
+.code-row code { font-size: 1.05rem; background: var(--yellow-soft); border: 1px solid var(--yellow); padding: 4px 10px; border-radius: var(--radius); letter-spacing: .5px; }
+.grade-card td:last-child { text-align: left; color: var(--muted); }

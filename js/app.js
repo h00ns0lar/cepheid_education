@@ -8,7 +8,7 @@
   C.steps = C.steps || {};
 
   function fresh() {
-    return { galaxyId: null, seed: 0, step: 1, picked: [], observed: false, comps: {}, batchDone: false, an: {}, incl: {}, calib: false, plFit: false, ext: false, revealed: false, pred: {}, log: {} };
+    return { galaxyId: null, seed: 0, step: 1, picked: [], observed: false, comps: {}, batchDone: false, an: {}, incl: {}, calib: false, plFit: false, ext: false, revealed: false, pred: {}, log: {}, time: null, result: null, attempt: 0 };
   }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.galaxyId !== undefined && (s.galaxyId === null || C.galaxyById(s.galaxyId))) return Object.assign(fresh(), s); } catch (e) { /* 무시 */ }
@@ -211,9 +211,11 @@
     C.$('#btn-prev').onclick = () => C.go(C.S.step - 1);
     C.$('#btn-next').onclick = () => C.go(C.S.step + 1);
     window.addEventListener('resize', () => { if (C.steps[C.S.step] && C.steps[C.S.step].resize) C.steps[C.S.step].resize(); });
+    C.startTimer();
     let start = C.S.step;
     if (!C.S.galaxyId) start = 1;
     C.go(start);
+    C.showCodeCheck();
   }
   document.addEventListener('DOMContentLoaded', init);
 })(typeof window !== 'undefined' ? window : globalThis);

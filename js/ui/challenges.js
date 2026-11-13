@@ -41,6 +41,7 @@
     const sol = h('details', null, h('summary', null, '정답과 풀이 보기'),
       h('ul', null, rows.map((r) => h('li', null, r.label + ' → ', h('b', null, r.show)))),
       opts.solution || null);
+    if (opts.onPeek) sol.addEventListener('toggle', () => { if (sol.open) opts.onPeek(); });
     const grade = h('button', { class: 'primary', onclick: () => {
       let right = 0, filled = 0;
       rows.forEach((r, i) => {

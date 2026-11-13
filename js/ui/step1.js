@@ -316,7 +316,7 @@
     const S = C.S;
     S.picked = []; S.observed = false; S.comps = {}; S.batchDone = false; S.an = {}; S.incl = {};
     S.calib = false; S.plFit = false; S.ext = false; S.revealed = false;
-    S.pred = {}; S.log = {};
+    S.pred = {}; S.log = {}; S.result = null; S.time = null;
   }
 
   C.steps[1] = {
@@ -358,6 +358,7 @@
       resetDownstream();
       C.S.galaxyId = pick.id;
       C.S.seed = 1 + Math.floor(Math.random() * 900000);
+      C.S.time = { active: 0 }; C.S.attempt = C.nextAttempt(); // 이때부터 활동 시간을 잰다
       C.save();
       C.go(1);
     };

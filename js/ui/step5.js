@@ -45,6 +45,7 @@
       // S.log.pl[id] = '직접' | '풀이' | '자동'
       const HOW = { '직접': '직접 ✓', '풀이': '풀이 봄', '자동': '자동' };
       const pl = () => (S.log.pl = S.log.pl || {});
+      const peek = () => (S.log.peek = S.log.peek || {}); // 정답과 풀이를 열어 본 별
       const sync = () => { S.plFit = inc().length > 0 && inc().every((r) => pl()[r.id]); if (!S.plFit) S.revealed = false; C.save(); C.refreshNav(); };
       const vals = (r) => {
         const P2 = +r.P.toFixed(2), lp = Math.log10(P2), M = rel.a * (lp - 1) + rel.b;
@@ -125,7 +126,8 @@
             { label: 'M = ' + a + ' × (log P − 1) + (' + b + ')', ans: v.M, tol: 0.03, hint: '구한 log P에서 1을 빼고 ' + a + '를 곱한 뒤 ' + b + '를 더해요', show: v.M.toFixed(2) },
             { label: '광도 L = 10^(0.4 × (4.83 − M))', unit: '태양의 몇 배', ans: v.L, tolRel: 0.04, hint: '4.83 − M 에 0.4를 곱해서 10의 거듭제곱을 해요 (태양의 절대등급은 4.83)', show: fmtL(v.L) + ' 배' }
           ], {
-            onGrade: (right, total) => { if (right === total) { P[f.id] = '직접'; next(); setTimeout(refresh, 700); } },
+            onGrade: (right, total) => { if (right === total) { P[f.id] = peek()['5:' + f.id] ? '풀이' : '직접'; next(); setTimeout(refresh, 700); } },
+            onPeek: () => { peek()['5:' + f.id] = true; C.save(); },
             extra: [h('button', { class: 'ghost', onclick: () => { P[f.id] = '풀이'; refresh(); } }, '모르겠어요, 풀이 보고 넘어가기')],
             solution: [h('p', null, '① log P = log₁₀(' + v.P2.toFixed(2) + ') = ' + v.lp.toFixed(3)),
               h('p', null, '② M = ' + a + ' × (' + v.lp.toFixed(3) + ' − 1) + (' + b + ') = ' + v.M.toFixed(2)),
