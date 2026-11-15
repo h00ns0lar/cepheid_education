@@ -74,7 +74,7 @@
     ctx.fillStyle = band; ctx.fillRect(0, CH - 110, CW, 110);
     ctx.textAlign = 'left';
     ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.fillText(gal.name, 24, CH - 48);
-    ctx.fillStyle = '#9fb0e0'; ctx.font = '18px sans-serif'; ctx.fillText(gal.where + ' · 그림은 대략적인 모습입니다', 24, CH - 22);
+    ctx.fillStyle = '#9fb0e0'; ctx.font = '18px sans-serif'; ctx.fillText(gal.where, 24, CH - 22);
     cache[key] = cv;
     return cv;
   }
@@ -367,7 +367,7 @@
   function renderField(root) {
     const S = C.S, R = C.world(), gal = R.field.galaxy;
     const vars = R.field.vars;
-    const cv = h('canvas', { id: 'sil', width: CW, height: CH, 'data-cap': '은하의 대략적인 모습과 밝기가 변하는 별의 위치 (그림은 실제 사진이 아니에요)' });
+    const cv = h('canvas', { id: 'sil', width: CW, height: CH, 'data-cap': '은하의 모습과 밝기가 변하는 별의 위치' });
     const list = h('div', { class: 'varlist' });
     const count = h('span', { class: 'tag gold' });
 
@@ -422,7 +422,7 @@
         h('div', null,
           h('div', { class: 'panel' },
             h('h3', null, gal.name),
-            h('p', null, gal.where + '. 이 은하까지의 거리는 아직 비밀이에요 — 마지막에 공개됩니다. 그림은 은하의 대략적인 모습이고, 그 위에 ', h('b', null, '밝기가 변하는 별'), '만 골라 표시했습니다.'),
+            h('p', null, gal.where + '. 이 은하까지의 거리는 아직 비밀이에요 — 마지막에 공개됩니다. 그림 위에 ', h('b', null, '밝기가 변하는 별'), '만 골라 표시했어요.'),
             h('div', { class: 'callout' }, '모든 변광성은 같은 은하 안에 있으니 ', h('b', null, '거의 같은 거리'), '에 있다고 볼 수 있어요. 이게 뒤에서 주기-광도 관계를 찾아내는 열쇠예요.'),
             h('div', { class: 'row' }, count, h('span', { class: 'spacer' }), selAll, redo),
             h('div', { style: { marginTop: '10px' } }, list)),
