@@ -1,4 +1,4 @@
-// 선형 회귀, 은하수 보정 세페이드, 포그슨 방정식.
+// 선형 회귀, 은하수 보정 세페이드, 거리지수 식.
 (function (g) {
   const C = g.CEPH = g.CEPH || {};
 
@@ -14,7 +14,7 @@
     return { slope, intercept, rms, n, sigSlope: rms / Math.sqrt(sxx), mx, my };
   };
 
-  // 포그슨 방정식:  m - M = 5 log10(d / 10 pc)
+  // 거리지수 식:  m - M = 5 log10(d / 10 pc) = 5 log10 d - 5
   C.distFromMu = (mu) => Math.pow(10, (mu + 5) / 5);   // pc
   C.muFromDist = (dpc) => 5 * Math.log10(dpc / 10);
 

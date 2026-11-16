@@ -7,10 +7,10 @@ const C = globalThis.CEPH;
 let fail = 0;
 function ok(cond, msg) { if (!cond) { fail++; console.log('  FAIL', msg); } else console.log('  ok  ', msg); }
 
-// 1. 포그슨 왕복
+// 1. 거리지수 왕복
 {
   const mu = 24.47;
-  ok(Math.abs(C.muFromDist(C.distFromMu(mu)) - mu) < 1e-9, '포그슨 정/역변환 왕복');
+  ok(Math.abs(C.muFromDist(C.distFromMu(mu)) - mu) < 1e-9, '거리지수 정/역변환 왕복');
   ok(Math.abs(C.distFromMu(5) - 100) < 1e-9, 'm-M=5 → 100 pc');
 }
 

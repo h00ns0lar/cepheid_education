@@ -1,4 +1,4 @@
-// 6단계: 포그슨 방정식으로 거리 구하기 + 정답 공개
+// 6단계: 거리지수 식으로 거리 구하기 + 정답 공개
 (function (g) {
   const C = g.CEPH;
   const h = C.h;
@@ -30,7 +30,7 @@
         return { list, mean, sd, sem, d, dErr: d * Math.LN10 / 5 * sem, A };
       }
 
-      // 별마다 포그슨 방정식으로 거리를 직접 구한다. 첫 별(V1)을 풀면 나머지는 컴퓨터에게 맡길 수 있다.
+      // 별마다 거리지수 식으로 거리를 직접 구한다. 첫 별(V1)을 풀면 나머지는 컴퓨터에게 맡길 수 있다.
       // S.log.pog[id] = '직접' | '풀이' | '자동'  (예전 저장분의 S.log.pogson 은 첫 별 기록으로 옮긴다)
       const pog = () => (S.log.pog = S.log.pog || {});
       const peek = () => (S.log.peek = S.log.peek || {}); // 정답과 풀이를 열어 본 별
@@ -57,7 +57,7 @@
             P[f.id] !== '직접' ? h('button', { class: 'sm', onclick: () => { delete P[f.id]; refresh(); } }, '직접 다시 풀어 보기') : null);
         } else {
           body = C.quiz([
-            { label: '거리 모듈러스 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: mu.toFixed(2) + '  (' + m.toFixed(2) + ' − (' + M.toFixed(2) + '))' },
+            { label: '거리지수 μ = m − M', ans: mu, tol: 0.02, hint: 'm에서 M을 빼요 (M이 음수면 부호에 주의!)', show: mu.toFixed(2) + '  (' + m.toFixed(2) + ' − (' + M.toFixed(2) + '))' },
             { label: '거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dK, tolRel: 0.015, hint: '(μ+5)÷5 를 구해 10의 거듭제곱을 하면 pc 단위 거리가 나와요. 1000으로 나누면 kpc예요', show: dK.toFixed(1) + ' kpc  (= ' + Math.round(dK * 1000).toLocaleString('ko-KR') + ' pc)' }
           ], {
             onGrade: (right, total) => { if (right === total) { P[f.id] = peek()['6:' + f.id] ? '풀이' : '직접'; next(); setTimeout(refresh, 700); } },
@@ -76,7 +76,7 @@
             h('td', null, HOW[P[r.id]] || '풀기 전'))));
 
         calcBox.append(
-          h('div', { class: 'formula' }, 'm − M = 5 log', h('sub', null, '10'), '(d / 10 pc)', h('br'), h('small', { class: 'muted' }, '⇔  d = 10', h('sup', null, '(m − M + 5)/5'), ' pc')),
+          h('div', { class: 'formula' }, '거리지수 식:  m − M = 5 log d − 5', h('br'), h('small', { class: 'muted' }, '(d는 파섹 단위)  ⇔  d = 10', h('sup', null, '(m − M + 5)/5'), ' pc')),
           h('p', null, '세페이드마다 m과 M으로 거리를 직접 구해 보세요. 계산기를 써도 좋아요. ', h('b', null, firstId + '을 풀면'), ' 나머지는 컴퓨터에게 맡길 수 있어요. (먼지 보정은 아래에서 따로 해요)'),
           h('div', { class: 'grid cols-2' },
             h('div', null, h('div', { class: 'muted', style: { fontSize: '.85rem', marginBottom: '4px' } }, '앞 단계에서 구한 값 (누르면 그 별을 계산해요)'), valTable),
@@ -100,7 +100,7 @@
           return;
         }
         const cv = h('canvas', { class: 'plot' });
-        const pl = new C.Plot(cv, { xlabel: 'log P', ylabel: '거리 모듈러스 μ = m − M', invertY: false });
+        const pl = new C.Plot(cv, { xlabel: 'log P', ylabel: '거리지수 μ = m − M', invertY: false });
         const tbl = h('table', null,
           h('tr', null, h('th', null, '별'), h('th', null, 'P (일)'), h('th', null, 'm'), h('th', null, 'M'), h('th', null, 'μ = m − M' + (S.ext ? ' − A_V' : '')), h('th', null, '거리 d')),
           r.list.map((x) => h('tr', null, h('td', null, x.id), h('td', { class: 'mono' }, x.P.toFixed(2)), h('td', { class: 'mono' }, x.m.toFixed(2)), h('td', { class: 'mono' }, x.M.toFixed(2)), h('td', { class: 'mono' }, x.mu.toFixed(2)), h('td', { class: 'mono' }, C.distFmt(x.d)))));
@@ -131,7 +131,7 @@
             h('div', { class: 'panel' },
               h('h3', null, '이 은하까지의 거리'),
               h('div', { class: 'kpi' },
-                h('div', null, h('div', { class: 'v' }, r.mean.toFixed(2) + ' ± ' + r.sem.toFixed(2)), h('div', { class: 'l' }, '평균 거리 모듈러스 μ')),
+                h('div', null, h('div', { class: 'v' }, r.mean.toFixed(2) + ' ± ' + r.sem.toFixed(2)), h('div', { class: 'l' }, '평균 거리지수 μ')),
                 h('div', null, h('div', { class: 'v' }, r.sd.toFixed(2)), h('div', { class: 'l' }, '별마다 값이 흩어진 정도 (등급)'))),
               h('div', { style: { margin: '14px 0' } },
                 h('div', { class: 'result-big' }, C.lyKo(r.d * 3.26156)),
@@ -208,7 +208,7 @@
           ['먼지 보정 방향 예상', P.ext ? { far: '멀어진다', near: '가까워진다', same: '그대로' }[P.ext] + ox(P.ext === 'near') : '—'],
           ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
           ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],
-          ['포그슨 방정식 계산', (function () { const v = Object.values(pog()); const c = (k) => v.filter((x) => x === k).length; return '직접 ' + c('직접') + '개 · 풀이 ' + c('풀이') + '개 · 자동 ' + c('자동') + '개'; })()],
+          ['거리지수 식 계산', (function () { const v = Object.values(pog()); const c = (k) => v.filter((x) => x === k).length; return '직접 ' + c('직접') + '개 · 풀이 ' + c('풀이') + '개 · 자동 ' + c('자동') + '개'; })()],
           ['힌트 사용', (S.log.hints || 0) + '번']
         ];
         return h('div', { class: 'record' },
@@ -220,9 +220,9 @@
       const chal = C.chal6({ list: rows.map((r) => Object.assign({}, r, { M: rel.a * (r.logP - 1) + rel.b })), rel, gal, revealed: () => S.revealed });
 
       root.append(
-        h('h2', null, '6단계 · 포그슨 방정식으로 거리 구하기'),
+        h('h2', null, '6단계 · 거리지수 식으로 거리 구하기'),
         h('p', { class: 'lead' }, '이제 마지막입니다. 주기로 구한 진짜 밝기(절대등급 M)와 하늘에서 보이는 밝기(겉보기등급 m)를 비교해, 은하까지의 거리를 계산해요.'),
-        h('div', { class: 'panel' }, h('h3', null, '포그슨 방정식으로 직접 계산하기'), calcBox),
+        h('div', { class: 'panel' }, h('h3', null, '거리지수 식으로 직접 계산하기'), calcBox),
         h('div', { style: { height: '16px' } }), box, chal.zone);
       drawCalc(); drawResult();
     }

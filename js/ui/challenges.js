@@ -238,7 +238,7 @@
 
     const d3 = C.chal('② 최종 거리와 오차 직접 계산하기', function (body) {
       const rows = [
-        { label: '평균 μ로 구한 거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dMean, tolRel: 0.015, hint: '평균 μ = ' + fx(mean) + ' 를 포그슨 식에 넣어요', show: fx(dMean, 1) + ' kpc' },
+        { label: '평균 μ로 구한 거리 d = 10^((μ + 5) ÷ 5)', unit: 'kpc', ans: dMean, tolRel: 0.015, hint: '평균 μ = ' + fx(mean) + ' 를 거리지수 식에 넣어요', show: fx(dMean, 1) + ' kpc' },
         { label: '거리 오차 δd = d × (ln 10 ÷ 5) × 표준오차', unit: 'kpc', ans: dErr, tolRel: 0.15, hint: 'ln 10 ÷ 5 ≈ 0.46 이에요. d에 0.46과 표준오차 ' + fx(sem, 3) + ' 를 곱해요', show: fx(dErr, 1) + ' kpc  (' + fx(dMean, 1) + ' × 0.4605 × ' + fx(sem, 3) + ')' }
       ];
       body.append(
@@ -251,7 +251,7 @@
       const muC = mean - A, dC = dK(muC);
       const rows = [
         { label: "보정한 μ' = 평균 μ − A_V", ans: muC, tol: 0.01, hint: '평균 μ에서 ' + fx(A) + ' 를 빼요', show: fx(muC) },
-        { label: "보정한 거리 d' = 10^((μ' + 5) ÷ 5)", unit: 'kpc', ans: dC, tolRel: 0.015, hint: "μ' 를 포그슨 식에 넣어요", show: fx(dC, 1) + ' kpc' }
+        { label: "보정한 거리 d' = 10^((μ' + 5) ÷ 5)", unit: 'kpc', ans: dC, tolRel: 0.015, hint: "μ' 를 거리지수 식에 넣어요", show: fx(dC, 1) + ' kpc' }
       ];
       body.append(
         h('p', null, '먼지가 별빛을 가리면 별이 더 어둡게 보여서 거리가 실제보다 멀게 계산돼요. 이 은하 방향의 먼지 때문에 어두워진 정도는 ', h('b', null, 'A_V = ' + fx(A) + ' 등급'), ' 이에요. 평균 μ = ' + fx(mean) + ' 에서 보정해 보세요.'),
