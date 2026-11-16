@@ -8,7 +8,7 @@
   C.steps = C.steps || {};
 
   function fresh() {
-    return { galaxyId: null, seed: 0, step: 1, picked: [], observed: false, comps: {}, batchDone: false, an: {}, incl: {}, calib: false, plFit: false, ext: false, revealed: false, pred: {}, log: {}, time: null, result: null, attempt: 0 };
+    return { galaxyId: null, seed: 0, step: 1, picked: [], observed: false, comps: {}, batchDone: false, an: {}, incl: {}, calib: false, plFit: false, ext: false, revealed: false, pred: {}, log: {}, time: null, result: null, attempt: 0, quiz: {} };
   }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.galaxyId !== undefined && (s.galaxyId === null || C.galaxyById(s.galaxyId))) return Object.assign(fresh(), s); } catch (e) { /* 무시 */ }
@@ -110,6 +110,8 @@
     const title = stage.querySelector('h2');
     const m = title && /^(\d)단계 · (.+)$/.exec(title.textContent);
     if (m) { title.textContent = m[2]; stage.insertBefore(h('div', { class: 'eyebrow' }, '제' + m[1] + '단계'), title); }
+    // 단계마다 맨 아래에 개념 확인 퀴즈 (1단계는 은하를 뽑은 뒤부터)
+    if (C.S.galaxyId && C.conceptQuiz) { const q = C.conceptQuiz(n); if (q) stage.appendChild(q); }
     C.figurize(stage);
     C.refreshNav();
     window.scrollTo(0, 0);

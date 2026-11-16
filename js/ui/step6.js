@@ -188,7 +188,7 @@
           h('p', { class: 'muted' }, gal.fact),
           h('div', { class: 'row' },
             h('button', { onclick: () => window.print() }, '결과 인쇄 / PDF 저장'),
-            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.S.result = null; C.S.time = null; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
+            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.S.result = null; C.S.time = null; C.S.quiz = {}; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
       }
 
       // 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것
@@ -209,7 +209,8 @@
           ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
           ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],
           ['거리지수 식 계산', (function () { const v = Object.values(pog()); const c = (k) => v.filter((x) => x === k).length; return '직접 ' + c('직접') + '개 · 풀이 ' + c('풀이') + '개 · 자동 ' + c('자동') + '개'; })()],
-          ['힌트 사용', (S.log.hints || 0) + '번']
+          ['힌트 사용', (S.log.hints || 0) + '번'],
+          ['개념 확인 퀴즈', (function () { const q = C.conceptScore(); return q.done ? q.right + ' / ' + q.done + '문제 맞힘' + (q.done < q.n ? ' (전체 ' + q.n + '문제 중 ' + q.done + '문제 풂)' : '') : '아직 풀지 않았어요'; })()]
         ];
         return h('div', { class: 'record' },
           h('h3', null, '내 기록'),

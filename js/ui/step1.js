@@ -316,7 +316,7 @@
     const S = C.S;
     S.picked = []; S.observed = false; S.comps = {}; S.batchDone = false; S.an = {}; S.incl = {};
     S.calib = false; S.plFit = false; S.ext = false; S.revealed = false;
-    S.pred = {}; S.log = {}; S.result = null; S.time = null;
+    S.pred = {}; S.log = {}; S.result = null; S.time = null; S.quiz = {};
   }
 
   C.steps[1] = {
