@@ -286,19 +286,6 @@ dialog#gloss { overflow: visible; padding: 0; }
 .scope-note { margin-top: 6px; font-size: .85rem; }
 
 /* 결과 등급 */
-.grade-card { border: 2px solid var(--navy); border-radius: var(--radius); background: #fff; padding: 16px; margin: 8px 0 12px; }
-.grade-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
-.grade-head b { display: block; font-size: 1.15rem; color: var(--navy); }
-.grade-head small { color: var(--muted); }
-.stars { font-size: 2.2rem; letter-spacing: 2px; line-height: 1; white-space: nowrap; }
-.stars span { color: #d6dbe3; }
-.stars span.on { color: var(--yellow); text-shadow: 0 1px 0 #c79400; }
-.grade-head .badge { background: var(--cyan-soft); color: var(--cyan); border: 2px solid var(--cyan); font-weight: 800; padding: 8px 14px; border-radius: var(--radius); white-space: nowrap; }
-.grade-card td:nth-child(2) { white-space: nowrap; font-weight: 700; }
-.code-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 6px; }
-.code-row span { font-weight: 700; color: var(--navy); }
-.code-row code { font-size: 1.05rem; background: var(--yellow-soft); border: 1px solid var(--yellow); padding: 4px 10px; border-radius: var(--radius); letter-spacing: .5px; }
-.grade-card td:last-child { text-align: left; color: var(--muted); }
 
 /* 개념 확인 퀴즈 */
 .concept-quiz { position: relative; margin: 28px 0 8px; border: 2px solid var(--cyan); border-radius: var(--radius); background: #fff; padding: 34px 18px 14px; }
@@ -317,3 +304,12 @@ button.cq-opt.right { border: 2px solid var(--green); background: #eaf6ef; }
 button.cq-opt.wrong { border: 2px solid var(--red); background: #fbecea; }
 button.cq-opt.dim { opacity: .55; }
 .cq-item .callout { margin-top: 8px; }
+.quiz-card { border: 2px solid var(--navy); border-radius: var(--radius); background: #fff; padding: 16px; margin: 8px 0 12px; }
+.qc-total { color: var(--navy); margin-bottom: 10px; }
+.qc-total b { font-size: 2.4rem; line-height: 1; }
+.qc-total span { font-size: 1.15rem; font-weight: 700; }
+.qc-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.qc-step { display: flex; gap: 8px; align-items: baseline; background: var(--cyan-soft); border: 1px solid var(--cyan); border-radius: var(--radius); padding: 6px 12px; }
+.qc-step span { color: var(--muted); font-size: .9rem; }
+.qc-step b { color: var(--navy); }
+.qc-step.undone { background: #fff; border-style: dashed; }

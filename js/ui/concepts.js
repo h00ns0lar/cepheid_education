@@ -169,8 +169,6 @@
           answered ? h('div', { class: 'callout ' + (pick === item.a ? 'good' : 'warn') },
             h('b', null, pick === item.a ? '맞아요! ' : '아쉬워요. 정답은 ' + NUM[ord.indexOf(item.a)] + '. '), item.e) : null));
       });
-      if (done.length) box.append(h('div', { class: 'row', style: { justifyContent: 'flex-end' } },
-        h('button', { class: 'sm', onclick: () => { list.forEach((_, i) => delete A[step + '-' + i]); C.save(); draw(); } }, '다시 풀어 보기')));
     }
     draw();
     return box;
@@ -182,5 +180,21 @@
     let n = 0, right = 0, done = 0;
     Object.keys(C.CONCEPTS).forEach((s) => C.CONCEPTS[s].forEach((q, i) => { n++; const p = A[s + '-' + i]; if (p !== undefined) { done++; if (p === q.a) right++; } }));
     return { n, right, done };
+  };
+
+  // 정답 공개 화면: 퀴즈 맞힌 개수 (단계별로도)
+  C.quizCard = function () {
+    const A = C.S.quiz || {}, t = C.conceptScore();
+    const steps = Object.keys(C.CONCEPTS).map((s) => {
+      const list = C.CONCEPTS[s];
+      const right = list.filter((q, i) => A[s + '-' + i] === q.a).length;
+      const done = list.filter((q, i) => A[s + '-' + i] !== undefined).length;
+      return h('div', { class: 'qc-step' + (done < list.length ? ' undone' : '') },
+        h('span', null, s + '단계'), h('b', null, right + ' / ' + list.length));
+    });
+    return h('div', { class: 'quiz-card' },
+      h('div', { class: 'qc-total' }, h('b', null, t.right), h('span', null, ' / ' + t.n + ' 문제 맞힘')),
+      h('div', { class: 'qc-steps' }, steps),
+      t.done < t.n ? h('small', { class: 'muted' }, '아직 안 푼 문제가 ' + (t.n - t.done) + '개 있어요. 각 단계 화면 맨 아래에서 풀 수 있어요.') : null);
   };
 })(typeof window !== 'undefined' ? window : globalThis);

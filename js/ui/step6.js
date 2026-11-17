@@ -149,15 +149,7 @@
         chal.refresh();
       }
 
-      // 처음 정답을 확인한 순간의 결과로 등급을 매기고 고정한다 (그 뒤에 값을 바꿔도 등급은 그대로)
-      function freeze(r) {
-        if (S.result) return;
-        const dTrue = C.distFromMu(gal.mu);
-        S.result = C.gradeResult({ rows, err: (r.d / dTrue - 1) * 100, dTrue });
-      }
-
       function drawReveal(r) {
-        if (!S.result) { freeze(r); C.save(); }
         const dTrue = C.distFromMu(gal.mu);
         const other = (function () {
           const A = S.ext ? 0 : gal.Av;
@@ -182,13 +174,13 @@
             ' ' + (S.ext ? '먼지 보정을 끄면' : '먼지 보정을 켜면') + ' 거리는 ' + C.distFmt(other) + ', 오차 ' + (errOther >= 0 ? '+' : '') + errOther.toFixed(1) + '% 가 돼요.'),
           h('div', { class: 'callout' },
             h('b', null, '내 분석 요약 · '), '세페이드 ' + truthC + '개 중 ' + found + '개를 찾았고 · 식쌍성을 세페이드로 잘못 넣은 것 ' + wrong + '개 · 주기를 4% 안으로 맞힌 별 ' + periodOK + '개'),
-          h('h3', { style: { marginTop: '16px' } }, '내 등급'),
-          C.gradeCard(S.result),
+          h('h3', { style: { marginTop: '16px' } }, '개념 확인 퀴즈'),
+          C.quizCard(),
           myRecord(r, dTrue),
           h('p', { class: 'muted' }, gal.fact),
           h('div', { class: 'row' },
             h('button', { onclick: () => window.print() }, '결과 인쇄 / PDF 저장'),
-            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.S.result = null; C.S.time = null; C.S.quiz = {}; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
+            h('button', { class: 'primary', onclick: () => C.ask('새로운 은하를 뽑아 처음부터 다시 도전할까요?', () => { C.S.galaxyId = null; C.S.picked = []; C.S.observed = false; C.S.comps = {}; C.S.batchDone = false; C.S.an = {}; C.S.incl = {}; C.S.calib = false; C.S.plFit = false; C.S.ext = false; C.S.revealed = false; C.S.pred = {}; C.S.log = {}; C.S.quiz = {}; C.save(); C.go(1); }, '도전') }, '다른 은하에 도전'))));
       }
 
       // 내 기록: 처음 예상과 결과, 직접 한 것 / 컴퓨터에게 맡긴 것
@@ -209,8 +201,7 @@
           ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
           ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],
           ['거리지수 식 계산', (function () { const v = Object.values(pog()); const c = (k) => v.filter((x) => x === k).length; return '직접 ' + c('직접') + '개 · 풀이 ' + c('풀이') + '개 · 자동 ' + c('자동') + '개'; })()],
-          ['힌트 사용', (S.log.hints || 0) + '번'],
-          ['개념 확인 퀴즈', (function () { const q = C.conceptScore(); return q.done ? q.right + ' / ' + q.done + '문제 맞힘' + (q.done < q.n ? ' (전체 ' + q.n + '문제 중 ' + q.done + '문제 풂)' : '') : '아직 풀지 않았어요'; })()]
+          ['힌트 사용', (S.log.hints || 0) + '번']
         ];
         return h('div', { class: 'record' },
           h('h3', null, '내 기록'),
