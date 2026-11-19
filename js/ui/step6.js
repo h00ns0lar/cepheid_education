@@ -136,7 +136,7 @@
               h('div', { style: { margin: '14px 0' } },
                 h('div', { class: 'result-big' }, C.lyKo(r.d * 3.26156)),
                 h('div', { class: 'muted' }, '(' + C.pcFmt(r.d) + ') · ± ' + C.distFmt(r.dErr) + ' 계산 오차 범위')),
-              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; freeze(r); C.save(); drawResult(); C.refreshNav(); } }, '정답 확인하기'))));
+              S.revealed ? null : h('button', { class: 'primary big', onclick: () => { S.revealed = true; C.save(); drawResult(); C.refreshNav(); } }, '정답 확인하기'))));
         // 차트
         const xr = [0.3, 1.7], yr = C.padRange(r.list.map((x) => x.mu).concat([r.mean - 0.5, r.mean + 0.5]), 0.1);
         pl.begin(xr[0], xr[1], yr[0], yr[1]);
