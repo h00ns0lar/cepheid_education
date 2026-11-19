@@ -188,15 +188,12 @@
         const LY = 3.26156, first = S.picked[0], P = S.pred;
         const an = S.picked.map((id) => S.an[id] || {});
         const cnt = (k, v) => an.filter((a) => a[k] === v).length;
-        const inc = C.cepheidRows().filter((x) => x.incl);
-        const bright = inc.length ? inc.reduce((a, x) => (x.P > a.P ? x : a)).id : null;
         const ox = (ok) => (ok ? ' ✔' : ' ✘');
         const rowsR = [
           ['처음 예상한 거리', P.dist0 ? C.distFmt(P.dist0 / LY) : '예상하지 않았어요'],
           ['내가 잰 거리', C.distFmt(r.d)],
           ['실제 거리', C.distFmt(dTrue)],
           [first + ' 주기: 내 어림 → 최종', (P.p1 > 0 ? P.p1.toFixed(1) + '일' : P.p1 === null ? '건너뜀' : '—') + ' → ' + (S.an[first] && S.an[first].P ? S.an[first].P.toFixed(2) + '일' : '—')],
-          ['가장 밝은 별 예상', P.bright ? P.bright + (bright ? ox(P.bright === bright) : '') : P.bright === null ? '건너뜀' : '—'],
           ['먼지 보정 방향 예상', P.ext ? { far: '멀어진다', near: '가까워진다', same: '그대로' }[P.ext] + ox(P.ext === 'near') : '—'],
           ['직접 한 것', first + ' 비교성 고르기 · 주기 ' + cnt('howP', '직접') + '개 · 분류 ' + cnt('howType', '직접') + '개'],
           ['컴퓨터에게 맡긴 것', '나머지 비교성 일괄 처리 · 주기 ' + cnt('howP', '자동') + '개 · 분류 ' + cnt('howType', '자동') + '개'],

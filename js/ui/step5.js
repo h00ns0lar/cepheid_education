@@ -33,7 +33,7 @@
       const rows = C.cepheidRows();
       const inc = () => rows.filter((r) => r.incl);
       const rel = C.litRelation();
-      const tblBox = h('div'), calcBox = h('div'), predBox = h('div'), doneBox = h('div');
+      const tblBox = h('div'), calcBox = h('div'), doneBox = h('div');
 
       if (rows.length < 3) {
         root.append(h('h2', null, '5단계 · 주기-광도 관계'),
@@ -69,32 +69,6 @@
                 h('td', null, h('input', { type: 'checkbox', checked: r.incl, onchange: (e) => { r.incl = e.target.checked; S.incl[r.id] = r.incl; refresh(); } })));
             })),
           h('p', { class: 'muted', style: { marginTop: '8px' } }, '주기가 긴 세페이드일수록 훨씬 밝아요 — 태양의 수천~수만 배. 그래서 멀리서도 보입니다. "사용" 칸에서 이상해 보이는 별은 뺄 수 있어요.'));
-      }
-
-      // 먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은?
-      const brightest = () => inc().reduce((a, r) => (r.P > a.P ? r : a));
-      function drawPredict() {
-        predBox.innerHTML = '';
-        const use = inc();
-        if (!use.length) return;
-        const pick = S.pred.bright;
-        if (!S.plFit) {
-          if (pick !== undefined) return;
-          predBox.append(h('div', { class: 'predict-box' },
-            h('b', null, '먼저 예상해 보기: 이 중 진짜로 가장 밝은 별은 어느 것일까요?'),
-            h('p', { class: 'muted', style: { margin: '4px 0 8px' } }, '하늘에서 밝게 보이는 별(⟨m⟩이 작은 별)이 진짜로도 밝을까요? 위의 식을 보고 골라 보세요. 고르면 아래에서 직접 계산할 수 있어요.'),
-            h('div', { class: 'chips' },
-              use.map((r) => h('div', { class: 'chip', onclick: () => { S.pred.bright = r.id; C.save(); drawPredict(); drawCalc(); } }, r.id)),
-              h('div', { class: 'chip', style: { opacity: .7 }, onclick: () => { S.pred.bright = null; C.save(); drawPredict(); drawCalc(); } }, '건너뛰기'))));
-          return;
-        }
-        if (pick === undefined) return;
-        const b = brightest(), L = fmtL(vals(b).L);
-        predBox.append(pick === null
-          ? h('div', { class: 'callout' }, '가장 밝은 별은 주기가 가장 긴 ' + b.id + '예요 (태양의 ' + L + '배).')
-          : h('div', { class: 'callout ' + (pick === b.id ? 'good' : 'warn') },
-            pick === b.id ? '맞아요! 주기가 가장 긴 ' + b.id + '가 태양의 ' + L + '배로 가장 밝아요.'
-              : '내가 고른 별은 ' + pick + '. 하지만 가장 밝은 별은 주기가 가장 긴 ' + b.id + '예요 (태양의 ' + L + '배). 주기가 길수록 진짜로 더 밝아요!'));
       }
 
       function drawCalc() {
@@ -135,7 +109,7 @@
           });
         }
 
-        calcBox.append(h('div', { class: S.pred.bright === undefined ? 'locked-area' : '' },
+        calcBox.append(h('div', null,
           h('p', null, '4단계에서 구한 주기를 식에 대입해 절대등급 M과 광도 L을 직접 구해 보세요. 계산기를 써도 좋아요. ', h('b', null, firstId + '을 풀면'), ' 나머지는 컴퓨터에게 맡길 수 있어요.'),
           h('div', { class: 'grid cols-2' },
             h('div', null, h('div', { class: 'muted', style: { fontSize: '.85rem', marginBottom: '4px' } }, '앞 단계에서 구한 값 (누르면 그 별을 계산해요)'), valTable),
@@ -159,7 +133,7 @@
           : h('div', { class: 'muted', style: { marginTop: '8px' } }, '진행: ' + n + ' / ' + use.length + ' 별 완료'));
       }
 
-      function refresh() { sync(); drawPredict(); drawCalc(); drawTable(); drawDone(); chal.refresh(); }
+      function refresh() { sync(); drawCalc(); drawTable(); drawDone(); chal.refresh(); }
 
       const chal = C.chal5({ rows: inc });
 
@@ -173,12 +147,12 @@
           h('div', { class: 'callout' }, '※ 허블 우주망원경 등의 시차 관측으로 정한 값을 교육용으로 단순화한 식이에요. 이 식이 어떻게 만들어졌는지는 맨 아래 도전 과제에서 직접 확인해 볼 수 있어요.')),
         h('div', { class: 'panel', style: { marginTop: '16px' } },
           h('h3', null, '② 이 은하의 세페이드에 식 대입하기'),
-          predBox, calcBox, tblBox, doneBox),
+          calcBox, tblBox, doneBox),
         h('details', null, h('summary', null, '왜 절대등급이 필요한가요?'),
           h('p', null, '같은 전구도 멀리 있으면 어둡게 보이죠. 별의 진짜 밝기(절대등급 M)와 하늘에서 보이는 밝기(겉보기등급 m)를 비교하면 얼마나 멀리 있는지 알 수 있어요. 세페이드는 주기만 재면 M을 알 수 있어서, 먼 은하까지의 거리를 재는 "표준 촛불"로 쓰여요. 이게 "우주 거리 사다리"의 한 계단이에요.')),
         chal.zone);
 
-      sync(); drawPredict(); drawCalc(); drawTable(); drawDone();
+      sync(); drawCalc(); drawTable(); drawDone();
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
